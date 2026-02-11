@@ -1,12 +1,5 @@
 import { notFound } from "next/navigation";
-import { sql } from "@/lib/db";
-
-type Post = {
-  id: number;
-  post_name: string;
-  post_date: Date;
-  post_body: string;
-};
+import {getPostById} from "@/lib/posts";
 
 export default async function Page({
   params,
@@ -15,15 +8,9 @@ export default async function Page({
 }) {
   // "1" when user visits /posts/1
   const { id } = await params;
-  const data = (await sql`
-      SELECT id, post_name, post_date, post_body, post_tags
-      FROM posts
-      WHERE id = ${id}
-    `) as Post[];
-  const post = data[0];
-
   const postId = Number(id);
   if (Number.isNaN(postId)) notFound();
+  const post = await getPostById(postId);
 
   return (
   <main className="container mx-auto p-4">

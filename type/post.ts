@@ -6,8 +6,8 @@ export type PostRow = {
   post_body: string;
 };
 
-export type CreatePostInput = {
+export type NewPostInput = {
   post_name: string;
   post_author: string;
-  content: string;
+  post_body: string;
 };

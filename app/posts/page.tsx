@@ -1,19 +1,15 @@
 // app/posts/page.tsx
 import { sql } from "@/lib/db";
-import type { PostRow } from "@/type/post";
+import {getPosts} from "@/lib/posts";
 import Link from "next/link";
 
 export default async function PostsPage() {
-  const posts = (await sql`
-    SELECT id, post_name, post_date, post_body, post_tags
-    FROM posts
-    ORDER BY post_date DESC, id DESC
-  `) as PostRow[];
-
+  const posts = await getPosts();
   return (
     <main className="container mx-auto p-4">
       <h1 className="text-2xl font-semibold mb-6">Posts</h1>
-      <ul className="space-y-4">
+      <Link href="/posts/create" className="btn">New Post</Link>
+      <ul className="space-y-4 mt-6">
         {posts.map((p) => (
             <Link href={`posts/${p.id}`} className="block" key={p.id}>
                 <li key={p.id} className="rounded-lg border p-4 ">
