@@ -10,4 +10,5 @@ export type NewPostInput = {
   post_name: string;
   post_author: string;
   post_body: string;
+  post_date: string;
 };

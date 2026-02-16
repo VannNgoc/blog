@@ -22,10 +22,10 @@ export async function getPostById(id: number) {
 }
 
 export async function createPost(postData: NewPostInput) {
-  const { post_name, post_author, post_body } = postData;
+  const { post_name, post_author, post_body, post_date } = postData;
   await sql`
-    INSERT INTO posts (post_name, post_author, post_body)
-    VALUES (${post_name}, ${post_author}, ${post_body})
+    INSERT INTO posts (post_name, post_author, post_body, post_date)
+    VALUES (${post_name}, ${post_author}, ${post_body}, ${post_date})
   `;
   return "Post created successfully";
 }
