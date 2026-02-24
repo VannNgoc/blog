@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import {getPostById} from "@/lib/posts";
+import {getPostById} from "@/lib/posts/queries";
 
 export default async function Page({
   params,

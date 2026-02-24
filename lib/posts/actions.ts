@@ -1,6 +1,8 @@
 'use server'
 import { NewPostInput } from "@/type/post";
-import { createPost } from "@/lib/posts";
+import { createPost } from "@/lib/posts/queries";
+import { deletePostById } from "@/lib/posts/queries";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 export async function createPostHandler(data: FormData){
@@ -20,4 +22,15 @@ export async function createPostHandler(data: FormData){
     }
     await createPost(postData);
     redirect("/posts");
+}
+
+
+
+export async function deletePostAction(formData: FormData) {
+  const id = Number(formData.get("id"));
+  if (!Number.isFinite(id)) throw new Error("Invalid id");
+
+  await deletePostById(id);
+
+  revalidatePath("/posts");
 }

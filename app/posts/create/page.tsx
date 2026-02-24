@@ -1,4 +1,4 @@
-import { createPostHandler } from "./actions";
+import { createPostHandler } from "@/lib/posts/actions";
 
 export default function CreatePostPage(){
     return(
