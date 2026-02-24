@@ -29,3 +29,12 @@ export async function createPost(postData: NewPostInput) {
   `;
   return "Post created successfully";
 }
+
+export async function deletePostById(id: number) {
+  const result = await sql`
+    DELETE FROM posts
+    WHERE id = ${id}
+    RETURNING *;
+  `;
+  return result[0] ?? null;
+}
