@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { PostRow } from "@/type/post";
 import { DeletePostConfirmButton } from "@/ui/posts/DeletePostConfirmationButton";
+import { EditButton } from "@/ui/posts/EditButton";
 
 type PostCardProps = {
   post: PostRow;
@@ -21,6 +22,7 @@ export function PostCard({ post }: PostCardProps) {
         </p>
       </Link>
       <DeletePostConfirmButton id={post.id} />
+      <EditButton id={post.id} />
     </li>
   );
 }
