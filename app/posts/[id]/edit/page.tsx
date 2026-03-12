@@ -22,10 +22,11 @@ export default async function Page({
             <input name="id" type="hidden" value={postId} />
             <input name="title" type="text" placeholder="$Post Title" className="border p-2 w-full mb-4" defaultValue={post.post_name}/>
             <textarea name="body" placeholder="Post Content" className="border p-2 w-full h-40 mb-4" defaultValue={post.post_body}></textarea>
-            <input name="id" type="hidden" value={post.id} />
-            <button className="btn">Confirm</button>
-        </form>
-        <Link href="/posts" className="btn ml-4">Cancel</Link>
-    </div>
-  </main>);
+            <button type="submit" className="btn" aria-label="Confirm Edits">Confirm</button>
+            <Link className="btn-cancel ms-4" href="/posts">
+              Cancel
+            </Link>
+          </form>
+        </div>
+      </main>);
 }
