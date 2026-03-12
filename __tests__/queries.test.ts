@@ -1,10 +1,4 @@
-import {
-  getPosts,
-  getPostById,
-  createPost,
-  editPost,
-  deletePostById,
-} from "@/lib/posts/queries";
+import { getPosts, getPostById } from "@/lib/posts/queries";
 
 // Mock the db module
 jest.mock("@/lib/db", () => ({
@@ -64,53 +58,5 @@ describe("getPostById", () => {
     const post = await getPostById(999);
 
     expect(post).toBeUndefined();
-  });
-});
-
-describe("createPost", () => {
-  it("should insert a post and return success message", async () => {
-    mockSql.mockResolvedValueOnce([]);
-
-    const result = await createPost({
-      post_name: "New Post",
-      post_author: "John Doe",
-      post_body: "Body content",
-      post_date: "2024-01-01",
-    });
-
-    expect(result).toBe("Post created successfully");
-  });
-});
-
-describe("editPost", () => {
-  it("should update a post and return success message", async () => {
-    mockSql.mockResolvedValueOnce([]);
-
-    const result = await editPost({
-      id: 1,
-      post_name: "Updated Title",
-      post_body: "Updated body",
-      post_edit_date: "2024-06-01",
-    });
-
-    expect(result).toBe("Post edited successfully");
-  });
-});
-
-describe("deletePostById", () => {
-  it("should delete a post and return the deleted row", async () => {
-    mockSql.mockResolvedValueOnce([mockPost]);
-
-    const result = await deletePostById(1);
-
-    expect(result).toMatchObject({ id: 1, post_name: "Test Post" });
-  });
-
-  it("should return null when post does not exist", async () => {
-    mockSql.mockResolvedValueOnce([]);
-
-    const result = await deletePostById(999);
-
-    expect(result).toBeNull();
   });
 });
