@@ -9,7 +9,7 @@ import type { EditPostInput, NewPostInput, PostRow } from "@/type/post";
 export async function createPost(postData: NewPostInput) {
   const { post_name, post_author, post_body, post_date } = postData;
   await sql`
-    INSERT INTO posts (post_name, post_author, post_body, post_date)
+    INSERT INTO "POSTS" (post_name, post_author, post_body, post_date)
     VALUES (${post_name}, ${post_author}, ${post_body}, ${post_date})
   `;
   return "Post created successfully";
@@ -18,7 +18,7 @@ export async function createPost(postData: NewPostInput) {
 export async function editPost(postData: EditPostInput) {
   const { id, post_name, post_body, post_edit_date } = postData;
   await sql`
-    UPDATE posts
+    UPDATE "POSTS"
     SET post_name = ${post_name}, post_body = ${post_body}, post_edit_date = ${post_edit_date}
     WHERE id = ${id}
   `;
@@ -27,7 +27,7 @@ export async function editPost(postData: EditPostInput) {
 
 export async function deletePostById(id: number): Promise<PostRow | null> {
   const result = (await sql`
-    DELETE FROM posts
+    DELETE FROM "POSTS"
     WHERE id = ${id}
     RETURNING *;
   `) as PostRow[];
