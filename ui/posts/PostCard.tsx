@@ -9,7 +9,7 @@ type PostCardProps = {
 
 export function PostCard({ post }: PostCardProps) {
   return (
-    <li className="rounded-lg border p-4 hover:bg-zinc-50 transition relative group">
+    <li className="rounded-lg border p-4 hover:bg-zinc-50  dark:hover:bg-neutral-500 transition relative group">
       <Link href={`/posts/${post.id}`} className="block">
         <div className="flex justify-between items-start mb-2">
           <h2 className="text-lg font-medium">{post.post_name}</h2>
