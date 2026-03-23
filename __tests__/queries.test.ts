@@ -1,4 +1,4 @@
-import { getPosts, getPostById } from "@/lib/posts/queries";
+import { getPosts, getPostById, getAdjacentPosts } from "@/lib/posts/queries";
 
 // Mock the db module
 jest.mock("@/lib/db", () => ({
@@ -19,6 +19,10 @@ const mockPost = {
   post_body: "This is a test post body.",
   post_tags: null,
 };
+
+beforeEach(() => {
+  mockSql.mockReset();
+});
 
 describe("getPosts", () => {
   it("should return a list of posts ordered by date", async () => {
@@ -58,5 +62,47 @@ describe("getPostById", () => {
     const post = await getPostById(999);
 
     expect(post).toBeUndefined();
+  });
+});
+
+describe("getAdjacentPosts", () => {
+  it("should return both newer and older posts when both exist", async () => {
+    const currentDate = new Date("2024-01-02");
+    const newerPost = { ...mockPost, id: 2, post_date: "2024-01-03", post_name: "Newer Post" };
+    const olderPost = { ...mockPost, id: 3, post_date: "2024-01-01", post_name: "Older Post" };
+
+    mockSql.mockResolvedValueOnce([newerPost]).mockResolvedValueOnce([olderPost]);
+
+    const adjacent = await getAdjacentPosts({ id: 1, post_date: currentDate });
+
+    expect(mockSql).toHaveBeenCalledTimes(2);
+    expect(adjacent).toEqual({
+      newer: newerPost,
+      older: olderPost,
+    });
+  });
+
+  it("should return undefined newer post when current post is the newest", async () => {
+    const currentDate = new Date("2024-01-03");
+    const olderPost = { ...mockPost, id: 3, post_date: "2024-01-02", post_name: "Older Post" };
+
+    mockSql.mockResolvedValueOnce([]).mockResolvedValueOnce([olderPost]);
+
+    const adjacent = await getAdjacentPosts({ id: 2, post_date: currentDate });
+
+    expect(adjacent.newer).toBeUndefined();
+    expect(adjacent.older).toEqual(olderPost);
+  });
+
+  it("should return undefined older post when current post is the oldest", async () => {
+    const currentDate = new Date("2024-01-01");
+    const newerPost = { ...mockPost, id: 2, post_date: "2024-01-02", post_name: "Newer Post" };
+
+    mockSql.mockResolvedValueOnce([newerPost]).mockResolvedValueOnce([]);
+
+    const adjacent = await getAdjacentPosts({ id: 3, post_date: currentDate });
+
+    expect(adjacent.newer).toEqual(newerPost);
+    expect(adjacent.older).toBeUndefined();
   });
 });
