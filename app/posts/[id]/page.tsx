@@ -18,7 +18,7 @@ export default async function Page({
   return (
   <main className="container mx-auto p-4 text-center">
     <h2 className="text-4xl tracking-wider">{post.post_name}</h2>
-    <p className="text-gray-600">{post.post_author}</p>
+    <p className="text-gray-600">{post.display_name}</p>
     <p className="text-gray-600">{new Date(post.post_date).toLocaleDateString()}</p>
     <hr/>
     <p className="mbs-4">{post.post_body}</p>
