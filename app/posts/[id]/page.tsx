@@ -20,7 +20,7 @@ export default async function Page({
     <h2 className="text-4xl tracking-wider">{post.post_name}</h2>
     <p className="text-gray-600">{post.display_name}</p>
     <p className="text-gray-600">{new Date(post.post_date).toLocaleDateString()}</p>
-    <hr/>
+    <hr className="my-4"/>
     <p className="mbs-4">{post.post_body}</p>
 
     <div className="mt-6 flex items-center justify-between">

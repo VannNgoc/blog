@@ -1,26 +1,22 @@
 "use client";
 
+import {
+  loginFormSchema,
+  type LoginFormFields,
+} from "@/schemas/login";
 import { useForm, SubmitHandler } from "react-hook-form";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-
-const schema = z.object({
-  email: z.email("Please enter a valid email"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-});
-
-type FormFields = z.infer<typeof schema>;
 
 export default function LoginPage() {
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<FormFields>({
-    resolver: zodResolver(schema),
+  } = useForm<LoginFormFields>({
+    resolver: zodResolver(loginFormSchema),
   });
 
-  const onSubmit: SubmitHandler<FormFields> = (data) => console.log(data);
+  const onSubmit: SubmitHandler<LoginFormFields> = (data) => console.log(data);
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <label htmlFor="email">Email</label>
