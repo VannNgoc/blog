@@ -22,7 +22,7 @@ export async function getPostById(id: number) {
       p.post_body,
       u.display_name
     FROM "POSTS" AS p
-    INNER JOIN "USERS" AS u ON p.post_author = u.user_id
+    INNER JOIN "USERS" AS u ON p.post_author = u.id
     WHERE p.id = ${id}
   `) as PostWithAuthorRow[];
   return rows[0];
