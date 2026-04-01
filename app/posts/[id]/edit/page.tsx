@@ -20,8 +20,8 @@ export default async function Page({
         <h1 className="mb-8 text-4xl font-medium tracking-medium text-zinc-800 dark:text-zinc-200">Edit Post</h1>
         <form action={editPostHandler}>
             <input name="id" type="hidden" value={postId} />
-            <input name="title" type="text" placeholder="$Post Title" className="border p-2 w-full mb-4" defaultValue={post.post_name}/>
-            <textarea name="body" placeholder="Post Content" className="border p-2 w-full h-40 mb-4" defaultValue={post.post_body}></textarea>
+            <input name="title" type="text" placeholder="Post Title" className="border p-2 w-full mb-4" defaultValue={post.post_name} required/>
+            <textarea name="body" placeholder="Post Content" className="border p-2 w-full h-40 mb-4" defaultValue={post.post_body} required></textarea>
             <button type="submit" className="btn" aria-label="Confirm Edits">Confirm</button>
             <Link className="btn-cancel ms-4" href="/posts">
               Cancel

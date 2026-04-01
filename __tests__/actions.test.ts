@@ -36,12 +36,10 @@ describe("createPostHandler", () => {
   it("should redirect to /posts after creating a post", async () => {
     mockSql.mockResolvedValueOnce([]);
 
-    const formData = makeFormData({
+    await createPostHandler({
       title: "My New Post",
       body: "Some body content",
     });
-
-    await createPostHandler(formData);
 
     expect(mockRedirect).toHaveBeenCalledWith("/posts");
   });

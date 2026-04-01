@@ -3,6 +3,10 @@ import "server-only";
 import { sql } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import {
+  createPostFormSchema,
+  type CreatePostFormFields,
+} from "@/schemas/post-form";
 import type { EditPostInput, NewPostInput, PostRow } from "@/type/post";
 
 // Data-layer mutation functions
@@ -35,9 +39,9 @@ export async function deletePostById(id: number): Promise<PostRow | null> {
 }
 
 // Server action handlers that orchestrate mutations
-export async function createPostHandler(data: FormData) {
-  const post_name = data.get("title") as string;
-  const post_body = data.get("body") as string;
+export async function createPostHandler(input: CreatePostFormFields) {
+  const { title: post_name, body: post_body } =
+    createPostFormSchema.parse(input);
 
   const d = new Date();
   const year = d.getFullYear();
