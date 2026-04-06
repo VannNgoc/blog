@@ -59,6 +59,7 @@ export async function createPostHandler(input: CreatePostFormFields) {
   };
 
   await createPost(postData);
+  revalidatePath("/posts");
   redirect("/posts");
 }
 
@@ -82,6 +83,8 @@ export async function editPostHandler(data: FormData) {
   };
 
   await editPost(postData);
+  revalidatePath("/posts");
+  revalidatePath(`/posts/${postData.id}`);
   redirect(`/posts/${postData.id}`);
 }
 
@@ -91,4 +94,5 @@ export async function deletePostAction(formData: FormData) {
 
   await deletePostById(id);
   revalidatePath("/posts");
+  revalidatePath(`/posts/${id}`);
 }
