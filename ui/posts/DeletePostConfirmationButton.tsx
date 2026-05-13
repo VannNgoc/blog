@@ -27,7 +27,7 @@ export function DeletePostConfirmButton({ id }: { id: number }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-red-600 hover:text-red-800"
+        className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
         aria-label="Delete"
       >
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
@@ -42,9 +42,9 @@ export function DeletePostConfirmButton({ id }: { id: number }) {
           role="dialog"
           aria-modal="true"
         >
-          <div className="w-full max-w-sm rounded-xl bg-white p-4 shadow">
-            <h3 className="text-base font-semibold">Delete post?</h3>
-            <p className="mt-2 text-sm text-gray-600">
+          <div className="w-full max-w-sm rounded-xl bg-white p-4 text-zinc-900 shadow dark:bg-zinc-900 dark:text-zinc-50">
+            <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Delete post?</h3>
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
               This action can’t be undone.
             </p>
 
@@ -52,7 +52,7 @@ export function DeletePostConfirmButton({ id }: { id: number }) {
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-md border px-3 py-2 text-sm"
+                className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-900 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-50 dark:hover:bg-zinc-800"
                 disabled={isPending}
               >
                 Cancel
@@ -61,7 +61,7 @@ export function DeletePostConfirmButton({ id }: { id: number }) {
               <button
                 type="button"
                 onClick={confirmDelete}
-                className="rounded-md bg-red-600 px-3 py-2 text-sm text-white disabled:opacity-60"
+                className="rounded-md bg-red-600 px-3 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-60 dark:bg-red-500 dark:hover:bg-red-600"
                 disabled={isPending}
               >
                 {isPending ? "Deleting..." : "Yes, delete"}

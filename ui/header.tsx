@@ -2,13 +2,13 @@ import Link from "next/link";
 
 export default function Header(){
     return(
-        <div className="flex items-center justify-between p-4 bg-gray-800 text-white">
-            <Link href="/" className="text-4xlfont-medium tracking-wider text-white dark:text-zinc-200">
+        <div className="flex items-center justify-between p-4 bg-zinc-800 text-zinc-50">
+            <Link href="/" className="text-4xl font-medium tracking-wider text-zinc-50 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300">
                 recollections
             </Link>
-            <nav>
-                <Link href="/posts" className="mr-4 hover:underline">Posts</Link>
-                <Link href="/login" className="hover:underline">Login</Link>
+            <nav className="text-zinc-100">
+                <Link href="/posts" className="mr-4 underline-offset-4 hover:underline hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300">Posts</Link>
+                <Link href="/login" className="underline-offset-4 hover:underline hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300">Login</Link>
             </nav>
         </div>
     )

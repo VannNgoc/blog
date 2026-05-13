@@ -22,27 +22,27 @@ export default function CreatePostPage(){
         await createPostHandler(data);
     };
     return(
-        <div className="container mx-auto p-4">
-            <h1 className="mb-8 text-4xl font-medium tracking-medium text-zinc-800 dark:text-zinc-200">Create a New Post</h1>
+        <div className="container mx-auto p-4 text-zinc-900 dark:text-zinc-50">
+            <h1 className="mb-8 text-4xl font-medium tracking-medium text-zinc-800 dark:text-zinc-100">Create a New Post</h1>
             <form onSubmit={handleSubmit(onSubmit)}>
-                <label htmlFor="title"></label>
+                <label htmlFor="title" className="sr-only">Title</label>
                 <input 
                     id="title" 
                     type="text"
                     placeholder="Post Title" 
-                    className="border p-2 w-full mb-4"
+                    className="mb-4 w-full rounded-md border border-zinc-300 bg-white p-2 text-zinc-900 placeholder:text-zinc-500 focus:border-blue-600 focus:outline-none dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50 dark:placeholder:text-zinc-400 dark:focus:border-blue-500"
                     {...register("title")}
                 />
-                <label htmlFor="body"></label>
+                <label htmlFor="body" className="sr-only">Body</label>
                 <textarea 
                     id="body"
                     placeholder="Post Content"
-                    className="border p-2 w-full h-40 mb-4"
+                    className="mb-4 h-40 w-full rounded-md border border-zinc-300 bg-white p-2 text-zinc-900 placeholder:text-zinc-500 focus:border-blue-600 focus:outline-none dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50 dark:placeholder:text-zinc-400 dark:focus:border-blue-500"
                     {...register("body")}
                 />
                 <input className="btn mb-2" type="submit" />
-                {errors.title && <p className="text-red-500">{errors.title.message}</p>}
-                {errors.body && <p className="text-red-500">{errors.body.message}</p>}
+                {errors.title && <p className="text-red-600 dark:text-red-400">{errors.title.message}</p>}
+                {errors.body && <p className="text-red-600 dark:text-red-400">{errors.body.message}</p>}
             </form>
         </div>
     )
