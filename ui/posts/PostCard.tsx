@@ -5,9 +5,10 @@ import { EditButton } from "@/ui/posts/EditButton";
 
 type PostCardProps = {
   post: PostRow;
+  isLoggedIn: boolean;
 };
 
-export function PostCard({ post }: PostCardProps) {
+export function PostCard({ post, isLoggedIn }: PostCardProps) {
   return (
     <li className="rounded-lg border border-zinc-200 p-4 transition hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900 relative group">
       <Link href={`/posts/${post.id}`} className="block">
@@ -25,8 +26,8 @@ export function PostCard({ post }: PostCardProps) {
         </p>
       </Link>
       <div className="flex absolute top-2 right-2 gap-2">
-        <DeletePostConfirmButton id={post.id} />
-        <EditButton id={post.id} />
+        {isLoggedIn && <DeletePostConfirmButton id={post.id} />}
+        {isLoggedIn && <EditButton id={post.id} />}
       </div>
 
     </li>
