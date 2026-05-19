@@ -1,10 +1,10 @@
-// import { sql } from "@/lib/db";
-
-// // lib/users/queries.ts
-// export async function createUser(authId: string, firstName: string, lastName: string, email: string) {
-//     await db.query(
-//       `INSERT INTO "USERS" (first_name, last_name, email, neon_auth_id, created_at)
-//        VALUES ($1, $2, $3, $4, NOW())`,
-//       [firstName, lastName, email, authId]
-//     );
-//   }
+import { sql } from "@/lib/db";
+export async function createUser(data: any) {
+    const {id, email, name, createdAt} = data;
+    console.log(id + " " + email + " " + name + " " + createdAt)
+    await sql`
+        INSERT INTO "USERS" (neon_auth_id, email, username, created_at)
+        VALUES (${id}, ${email}, ${name}, ${createdAt})
+    `;
+    return "User created successfully";
+  }

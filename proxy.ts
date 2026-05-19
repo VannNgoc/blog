@@ -7,15 +7,8 @@ export default auth.middleware({
 
 export const config = {
   matcher: [
-    // Protected routes requiring authentication
     '/account/:path*',
-    '/posts/create/:path*',
-    '/posts/:id/edit/:path*',
-    '/posts/:id/delete/:path*',
-    '/posts/:id/view/:path*',
-    '/posts/:id/comment/:path*',
-    '/posts/:id/like/:path*',
-    '/posts/:id/share/:path*',
-    '/posts/:id/save/:path*',
+    '/posts/create',
+    '/posts/:id/edit',
   ],
 };

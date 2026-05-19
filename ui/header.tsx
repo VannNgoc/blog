@@ -2,7 +2,7 @@ import Link from "next/link";
 import { auth } from '@/lib/auth/server';
 import SignOutButton from './sign-out-button';
 
-
+export const dynamic = 'force-dynamic';
 
 export default async function Header(){
     const { data: session } = await auth.getSession();
