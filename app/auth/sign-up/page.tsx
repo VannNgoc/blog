@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { signUpWithEmail } from './actions';
+import Link from 'next/link';
 
 export default function SignUpForm() {
   const [state, formAction, isPending] = useActionState(signUpWithEmail, null);
@@ -43,6 +44,7 @@ export default function SignUpForm() {
         className="flex w-sm justify-center rounded-md bg-indigo-500 px-3 py-1.5 text-sm/6 font-semibold text-white hover:bg-indigo-400">
         {isPending ? 'Creating account...' : 'Create Account'}
       </button>
+      <Link href='sign-in' className='hover:underline text-white'>Have an account? Sign in.</Link>
     </form>
   );
 }
