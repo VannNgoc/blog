@@ -38,7 +38,7 @@ export default function SignInForm() {
         Sign in
       </button>
 
-      <Link href={"sign-up"} className='hover:underline'>Create an account</Link>
+      <Link href={"sign-up"} className='hover:underline text-white'>Create an account</Link>
     </form>
   );
 }
