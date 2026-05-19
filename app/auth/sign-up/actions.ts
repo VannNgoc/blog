@@ -2,6 +2,7 @@
 
 import { auth } from '@/lib/auth/server';
 import { redirect } from 'next/navigation';
+import {createUser} from '@/lib/users/actions';
 
 export async function signUpWithEmail(
   _prevState: { error: string } | null,
@@ -19,9 +20,15 @@ export async function signUpWithEmail(
     password: formData.get('password') as string,
   });
 
+  const { data: session }= await auth.getSession();
+  if(session?.user){
+    createUser(session.user);
+  }
+  
+  
   if (error) {
     return { error: error.message || 'Failed to create account' };
   }
 
-  redirect('/');
+  redirect('/account');
 }
