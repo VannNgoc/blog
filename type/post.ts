@@ -9,7 +9,7 @@ export type PostRow = {
 
 /** Row from getPostById: POSTS joined with USERS for author display name */
 export type PostWithAuthorRow = PostRow & {
-  display_name: string;
+  username: string;
 };
 
 export type NewPostInput = {
