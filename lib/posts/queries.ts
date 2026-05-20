@@ -20,7 +20,7 @@ export async function getPostById(id: number) {
       p.post_date,
       p.post_edit_date,
       p.post_body,
-      u.display_name
+      u.username
     FROM "POSTS" AS p
     INNER JOIN "USERS" AS u ON p.post_author = u.id
     WHERE p.id = ${id}

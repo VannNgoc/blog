@@ -1,9 +1,17 @@
+'use server';
+
 import { sql } from "@/lib/db";
-export async function createUser(data: any) {
+type CreateUserInput = {
+  id: string;
+  email: string;
+  name: string;
+  createdAt: Date | string;
+};
+
+export async function createUser(data: CreateUserInput) {
     const {id, email, name, createdAt} = data;
-    console.log(id + " " + email + " " + name + " " + createdAt)
     await sql`
-        INSERT INTO "USERS" (neon_auth_id, email, username, created_at)
+        INSERT INTO "USERS" (id, email, username, created_at)
         VALUES (${id}, ${email}, ${name}, ${createdAt})
     `;
     return "User created successfully";
