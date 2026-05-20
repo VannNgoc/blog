@@ -18,7 +18,7 @@ export default async function Page({
   return (
   <main className="container mx-auto p-4 text-center text-zinc-900 dark:text-zinc-50">
     <h2 className="text-4xl tracking-wider text-zinc-900 dark:text-zinc-50">{post.post_name}</h2>
-    <p className="text-zinc-600 dark:text-zinc-400">{post.display_name}</p>
+    <p className="text-zinc-600 dark:text-zinc-400">{post.username}</p>
     <p className="text-zinc-600 dark:text-zinc-400">{new Date(post.post_date).toLocaleDateString()}</p>
     <hr className="my-4 border-zinc-200 dark:border-zinc-700"/>
     <p className="mbs-4 text-left text-zinc-900 dark:text-zinc-100">{post.post_body}</p>

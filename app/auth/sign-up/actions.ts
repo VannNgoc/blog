@@ -2,7 +2,7 @@
 
 import { auth } from '@/lib/auth/server';
 import { redirect } from 'next/navigation';
-import {createUser} from '@/lib/users/actions';
+import { createUser } from '@/lib/users/actions';
 
 export async function signUpWithEmail(
   _prevState: { error: string } | null,
@@ -14,21 +14,19 @@ export async function signUpWithEmail(
     return { error: "Email address must be provided." }
   }
 
-  const { error } = await auth.signUp.email({
+  const { data, error } = await auth.signUp.email({
     email,
     name: formData.get('name') as string,
     password: formData.get('password') as string,
   });
 
-  const { data: session }= await auth.getSession();
-  if(session?.user){
-    createUser(session.user);
-  }
-  
-  
   if (error) {
     return { error: error.message || 'Failed to create account' };
   }
 
-  redirect('/account');
+  if (data?.user) {
+    await createUser(data.user);
+  }
+
+  redirect('/');
 }
