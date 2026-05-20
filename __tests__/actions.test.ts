@@ -39,6 +39,7 @@ describe("createPostHandler", () => {
     await createPostHandler({
       title: "My New Post",
       body: "Some body content",
+      access: 1,
     });
 
     expect(mockRedirect).toHaveBeenCalledWith("/posts");
@@ -49,13 +50,12 @@ describe("editPostHandler", () => {
   it("should redirect to the post page after editing", async () => {
     mockSql.mockResolvedValueOnce([]);
 
-    const formData = makeFormData({
-      id: "42",
+    await editPostHandler({
+      id: 42,
       title: "Updated Title",
       body: "Updated body",
+      access: 1,
     });
-
-    await editPostHandler(formData);
 
     expect(mockRedirect).toHaveBeenCalledWith("/posts/42");
   });

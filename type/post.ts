@@ -5,6 +5,7 @@ export type PostRow = {
   post_date: Date;
   post_edit_date: Date;
   post_body: string;
+  access: number;
 };
 
 /** Row from getPostById: POSTS joined with USERS for author display name */
@@ -17,6 +18,7 @@ export type NewPostInput = {
   post_author: string;
   post_body: string;
   post_date: string;
+  access_type: number;
 };
 
 export type EditPostInput = {
@@ -24,4 +26,5 @@ export type EditPostInput = {
   post_name: string;
   post_body: string;
   post_edit_date: string;
+  access_type: number;
 };
