@@ -8,7 +8,7 @@ import {
   type CreatePostFormFields,
 } from "@/schemas/post-form";
 import type { EditPostInput, NewPostInput, PostRow } from "@/type/post";
-
+import {auth} from '@/lib/auth/server'
 // Data-layer mutation functions
 export async function createPost(postData: NewPostInput) {
   const { post_name, post_author, post_body, post_date } = postData;
@@ -43,24 +43,28 @@ export async function createPostHandler(input: CreatePostFormFields) {
   const { title: post_name, body: post_body } =
     createPostFormSchema.parse(input);
 
-  const d = new Date();
-  const year = d.getFullYear();
-  const month = d.getMonth() + 1;
-  const day = d.getDate();
-  const post_date = `${year}-${month.toString().padStart(2, "0")}-${day
-    .toString()
-    .padStart(2, "0")}`;
-
-  const postData: NewPostInput = {
-    post_name,
-    post_author: '1bd72eb0-d28f-4e3b-92d8-0d0f0a23fb92',
-    post_body,
-    post_date,
-  };
-
-  await createPost(postData);
-  revalidatePath("/posts");
-  redirect("/posts");
+  const { data : session } = await auth.getSession();
+  if(session?.user) {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1;
+    const day = d.getDate();
+    const post_date = `${year}-${month.toString().padStart(2, "0")}-${day
+      .toString()
+      .padStart(2, "0")}`;
+  
+    const postData: NewPostInput = {
+      post_name,
+      post_author: session?.user.id,
+      post_body,
+      post_date,
+    };
+    await createPost(postData);
+    revalidatePath("/posts");
+    redirect("/posts");
+  }else{
+    return "Error user is null"
+  }
 }
 
 export async function editPostHandler(data: FormData) {
