@@ -53,7 +53,7 @@ export async function createPostHandler(input: CreatePostFormFields) {
 
   const postData: NewPostInput = {
     post_name,
-    post_author: 1,
+    post_author: '1bd72eb0-d28f-4e3b-92d8-0d0f0a23fb92',
     post_body,
     post_date,
   };

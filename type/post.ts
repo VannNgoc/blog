@@ -1,7 +1,7 @@
 export type PostRow = {
   id: number;
   post_name: string;
-  post_author: number;
+  post_author: string;
   post_date: Date;
   post_edit_date: Date;
   post_body: string;
@@ -14,7 +14,7 @@ export type PostWithAuthorRow = PostRow & {
 
 export type NewPostInput = {
   post_name: string;
-  post_author: number;
+  post_author: string;
   post_body: string;
   post_date: string;
 };
