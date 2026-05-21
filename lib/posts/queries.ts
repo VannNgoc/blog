@@ -5,7 +5,16 @@ import type { PostRow, PostWithAuthorRow } from "@/type/post";
 export async function getPosts() {
   const posts = (await sql`
     SELECT id, post_name, post_date, post_body, post_tags
-    FROM "POSTS"
+    FROM "POSTS" WHERE access = 1
+    ORDER BY post_date DESC, id DESC
+  `) as PostRow[];
+  return posts;
+}
+
+export async function getUserPosts(userID: string) {
+  const posts = (await sql`
+    SELECT id, post_name, post_date, post_body, post_tags
+    FROM "POSTS" WHERE post_author = ${userID}
     ORDER BY post_date DESC, id DESC
   `) as PostRow[];
   return posts;
@@ -29,7 +38,11 @@ export async function getPostById(id: number) {
   return rows[0];
 }
 
-export async function getAdjacentPosts(input: { id: number; post_date: Date }) {
+export async function getAdjacentPosts(input: { id: number; post_date: Date; user_id?: string }) {
+  const accessFilter = input.user_id
+    ? sql`(access = 1 OR post_author = ${input.user_id})`
+    : sql`access = 1`;
+
   const newer = (await sql`
     SELECT id, post_name, post_date, post_body, post_tags
     FROM "POSTS"
@@ -37,6 +50,7 @@ export async function getAdjacentPosts(input: { id: number; post_date: Date }) {
       post_date > ${input.post_date}
       OR (post_date = ${input.post_date} AND id > ${input.id})
     )
+    AND ${accessFilter}
     ORDER BY post_date ASC, id ASC
     LIMIT 1
   `) as PostRow[];
@@ -48,6 +62,7 @@ export async function getAdjacentPosts(input: { id: number; post_date: Date }) {
       post_date < ${input.post_date}
       OR (post_date = ${input.post_date} AND id < ${input.id})
     )
+    AND ${accessFilter}
     ORDER BY post_date DESC, id DESC
     LIMIT 1
   `) as PostRow[];

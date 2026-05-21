@@ -66,43 +66,80 @@ describe("getPostById", () => {
 });
 
 describe("getAdjacentPosts", () => {
-  it("should return both newer and older posts when both exist", async () => {
-    const currentDate = new Date("2024-01-02");
-    const newerPost = { ...mockPost, id: 2, post_date: "2024-01-03", post_name: "Newer Post" };
-    const olderPost = { ...mockPost, id: 3, post_date: "2024-01-01", post_name: "Older Post" };
+  describe("unauthenticated (no user_id)", () => {
+    it("should return both newer and older posts when both exist", async () => {
+      const currentDate = new Date("2024-01-02");
+      const newerPost = { ...mockPost, id: 2, post_date: "2024-01-03", post_name: "Newer Post" };
+      const olderPost = { ...mockPost, id: 3, post_date: "2024-01-01", post_name: "Older Post" };
 
-    mockSql.mockResolvedValueOnce([newerPost]).mockResolvedValueOnce([olderPost]);
+      mockSql.mockResolvedValueOnce([newerPost]).mockResolvedValueOnce([olderPost]);
 
-    const adjacent = await getAdjacentPosts({ id: 1, post_date: currentDate });
+      const adjacent = await getAdjacentPosts({ id: 1, post_date: currentDate });
 
-    expect(mockSql).toHaveBeenCalledTimes(2);
-    expect(adjacent).toEqual({
-      newer: newerPost,
-      older: olderPost,
+      expect(mockSql).toHaveBeenCalledTimes(2);
+      expect(adjacent).toEqual({ newer: newerPost, older: olderPost });
+    });
+
+    it("should return undefined newer when current post is the newest", async () => {
+      const currentDate = new Date("2024-01-03");
+      const olderPost = { ...mockPost, id: 3, post_date: "2024-01-02", post_name: "Older Post" };
+
+      mockSql.mockResolvedValueOnce([]).mockResolvedValueOnce([olderPost]);
+
+      const adjacent = await getAdjacentPosts({ id: 2, post_date: currentDate });
+
+      expect(adjacent.newer).toBeUndefined();
+      expect(adjacent.older).toEqual(olderPost);
+    });
+
+    it("should return undefined older when current post is the oldest", async () => {
+      const currentDate = new Date("2024-01-01");
+      const newerPost = { ...mockPost, id: 2, post_date: "2024-01-02", post_name: "Newer Post" };
+
+      mockSql.mockResolvedValueOnce([newerPost]).mockResolvedValueOnce([]);
+
+      const adjacent = await getAdjacentPosts({ id: 3, post_date: currentDate });
+
+      expect(adjacent.newer).toEqual(newerPost);
+      expect(adjacent.older).toBeUndefined();
     });
   });
 
-  it("should return undefined newer post when current post is the newest", async () => {
-    const currentDate = new Date("2024-01-03");
-    const olderPost = { ...mockPost, id: 3, post_date: "2024-01-02", post_name: "Older Post" };
+  describe("authenticated (with user_id)", () => {
+    it("should return adjacent posts including the user's own private posts", async () => {
+      const currentDate = new Date("2024-01-02");
+      const newerPost = { ...mockPost, id: 2, post_date: "2024-01-03", post_name: "Newer Post" };
+      const olderPost = { ...mockPost, id: 3, post_date: "2024-01-01", post_name: "Older Post" };
 
-    mockSql.mockResolvedValueOnce([]).mockResolvedValueOnce([olderPost]);
+      mockSql.mockResolvedValueOnce([newerPost]).mockResolvedValueOnce([olderPost]);
 
-    const adjacent = await getAdjacentPosts({ id: 2, post_date: currentDate });
+      const adjacent = await getAdjacentPosts({ id: 1, post_date: currentDate, user_id: "42" });
 
-    expect(adjacent.newer).toBeUndefined();
-    expect(adjacent.older).toEqual(olderPost);
-  });
+      expect(mockSql).toHaveBeenCalledTimes(2);
+      expect(adjacent).toEqual({ newer: newerPost, older: olderPost });
+    });
 
-  it("should return undefined older post when current post is the oldest", async () => {
-    const currentDate = new Date("2024-01-01");
-    const newerPost = { ...mockPost, id: 2, post_date: "2024-01-02", post_name: "Newer Post" };
+    it("should return undefined newer when no newer accessible post exists", async () => {
+      const currentDate = new Date("2024-01-03");
+      const olderPost = { ...mockPost, id: 3, post_date: "2024-01-02", post_name: "Older Post" };
 
-    mockSql.mockResolvedValueOnce([newerPost]).mockResolvedValueOnce([]);
+      mockSql.mockResolvedValueOnce([]).mockResolvedValueOnce([olderPost]);
 
-    const adjacent = await getAdjacentPosts({ id: 3, post_date: currentDate });
+      const adjacent = await getAdjacentPosts({ id: 2, post_date: currentDate, user_id: "42" });
 
-    expect(adjacent.newer).toEqual(newerPost);
-    expect(adjacent.older).toBeUndefined();
+      expect(adjacent.newer).toBeUndefined();
+      expect(adjacent.older).toEqual(olderPost);
+    });
+
+    it("should return undefined for both when no accessible adjacent posts exist", async () => {
+      const currentDate = new Date("2024-01-01");
+
+      mockSql.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+
+      const adjacent = await getAdjacentPosts({ id: 1, post_date: currentDate, user_id: "42" });
+
+      expect(adjacent.newer).toBeUndefined();
+      expect(adjacent.older).toBeUndefined();
+    });
   });
 });
