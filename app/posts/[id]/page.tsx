@@ -1,6 +1,11 @@
 import { notFound } from "next/navigation";
 import { getAdjacentPosts, getPostById } from "@/lib/posts/queries";
+import { auth } from "@/lib/auth/server";
+import { EditButton } from "@/ui/posts/EditButton";
+import { DeletePostConfirmButton } from "@/ui/posts/DeletePostConfirmationButton";
 import Link from "next/link";
+
+export const dynamic = 'force-dynamic';
 
 export default async function Page({
   params,
@@ -11,13 +16,24 @@ export default async function Page({
   const { id } = await params;
   const postId = Number(id);
   if (Number.isNaN(postId)) notFound();
-  const post = await getPostById(postId);
+  const [post, { data: session }] = await Promise.all([
+    getPostById(postId),
+    auth.getSession(),
+  ]);
   if (!post) notFound();
   const { newer, older } = await getAdjacentPosts({ id: post.id, post_date: post.post_date });
+  const isOwner = session?.user?.id === post.post_author;
 
   return (
   <main className="container mx-auto p-4 text-center text-zinc-900 dark:text-zinc-50">
-    <h2 className="text-4xl tracking-wider text-zinc-900 dark:text-zinc-50">{post.post_name}</h2>
+    <div className="flex items-start justify-between">
+      <div className="flex-1" />
+      <h2 className="flex-1 text-4xl tracking-wider text-zinc-900 dark:text-zinc-50">{post.post_name}</h2>
+      <div className="flex flex-1 justify-end gap-2">
+        {isOwner && <EditButton id={post.id} />}
+        {isOwner && <DeletePostConfirmButton id={post.id} />}
+      </div>
+    </div>
     <p className="text-zinc-600 dark:text-zinc-400">{post.username}</p>
     <p className="text-zinc-600 dark:text-zinc-400">{new Date(post.post_date).toLocaleDateString()}</p>
     <hr className="my-4 border-zinc-200 dark:border-zinc-700"/>

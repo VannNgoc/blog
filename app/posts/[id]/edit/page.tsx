@@ -1,6 +1,7 @@
-import { notFound } from "next/navigation";
-import {getPostById} from "@/lib/posts/queries";
-import {editPostHandler} from "@/lib/posts/actions";
+import { notFound, redirect } from "next/navigation";
+import { getPostById } from "@/lib/posts/queries";
+import { editPostHandler } from "@/lib/posts/actions";
+import { auth } from "@/lib/auth/server";
 import Link from "next/link";
 
 export default async function Page({
@@ -8,11 +9,15 @@ export default async function Page({
 }: {
   params: { id: string };
 }) {
-  // "1" when user visits /posts/1
   const { id } = await params;
   const postId = Number(id);
   if (Number.isNaN(postId)) notFound();
   const post = await getPostById(postId);
+  if (!post) notFound();
+
+  const { data: session } = await auth.getSession();
+  if (!session?.user) redirect('/auth/sign-in');
+  if (post.post_author !== session.user.id) redirect(`/posts/${postId}`);
 
   return (
   <main className="container mx-auto p-4 text-zinc-900 dark:text-zinc-50">

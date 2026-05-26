@@ -34,6 +34,7 @@ const mockPost: PostRow = {
   post_date: "2024-03-15",
   post_body: "This is the body of the post.",
   post_tags: null,
+  post_author: "user-123",
 };
 
 describe("PostCard", () => {
@@ -49,7 +50,6 @@ describe("PostCard", () => {
 
   it("renders a formatted post date", () => {
     render(<PostCard post={mockPost} />);
-    // toLocaleDateString output varies by environment, so check it's non-empty
     const date = new Date("2024-03-15").toLocaleDateString();
     expect(screen.getByText(date)).toBeInTheDocument();
   });
@@ -60,17 +60,29 @@ describe("PostCard", () => {
     expect(link).toHaveAttribute("href", "/posts/1");
   });
 
-  it("renders the DeletePostConfirmButton with correct id", () => {
-    render(<PostCard post={mockPost} />);
+  it("renders the DeletePostConfirmButton when user is the author", () => {
+    render(<PostCard post={mockPost} currentUserId="user-123" />);
     const btn = screen.getByTestId("confirm-delete-btn");
     expect(btn).toBeInTheDocument();
     expect(btn).toHaveAttribute("data-id", "1");
   });
 
-  it("renders the EditButton linking to the edit page", () => {
-    render(<PostCard post={mockPost} />);
+  it("renders the EditButton when user is the author", () => {
+    render(<PostCard post={mockPost} currentUserId="user-123" />);
     const editBtn = screen.getByTestId("edit-btn");
     expect(editBtn).toHaveAttribute("href", "/posts/1/edit");
+  });
+
+  it("hides edit and delete buttons for non-owners", () => {
+    render(<PostCard post={mockPost} currentUserId="other-user" />);
+    expect(screen.queryByTestId("confirm-delete-btn")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("edit-btn")).not.toBeInTheDocument();
+  });
+
+  it("hides edit and delete buttons when not logged in", () => {
+    render(<PostCard post={mockPost} />);
+    expect(screen.queryByTestId("confirm-delete-btn")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("edit-btn")).not.toBeInTheDocument();
   });
 
   it("wraps content in a list item", () => {

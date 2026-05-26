@@ -2,13 +2,22 @@ import "server-only";
 import { sql } from "@/lib/db";
 import type { PostRow, PostWithAuthorRow } from "@/type/post";
 
-export async function getPosts() {
+const PAGE_SIZE = 10;
+
+export async function getPosts({ page = 1 }: { page?: number } = {}) {
+  const offset = (page - 1) * PAGE_SIZE;
   const posts = (await sql`
-    SELECT id, post_name, post_date, post_body, post_tags
+    SELECT id, post_name, post_date, post_body, post_tags, post_author
     FROM "POSTS"
     ORDER BY post_date DESC, id DESC
+    LIMIT ${PAGE_SIZE} OFFSET ${offset}
   `) as PostRow[];
   return posts;
+}
+
+export async function getPostCount() {
+  const result = await sql`SELECT COUNT(*)::int AS count FROM "POSTS"`;
+  return (result[0] as { count: number }).count;
 }
 
 export async function getPostById(id: number) {

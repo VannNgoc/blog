@@ -8,7 +8,8 @@ import {
   type CreatePostFormFields,
 } from "@/schemas/post-form";
 import type { EditPostInput, NewPostInput, PostRow } from "@/type/post";
-import {auth} from '@/lib/auth/server'
+import { auth } from '@/lib/auth/server';
+import { getPostById } from '@/lib/posts/queries';
 // Data-layer mutation functions
 export async function createPost(postData: NewPostInput) {
   const { post_name, post_author, post_body, post_date } = postData;
@@ -68,6 +69,14 @@ export async function createPostHandler(input: CreatePostFormFields) {
 }
 
 export async function editPostHandler(data: FormData) {
+  const { data: session } = await auth.getSession();
+  if (!session?.user) redirect('/auth/sign-in');
+
+  const postId = Number(data.get("id"));
+  const post = await getPostById(postId);
+  if (!post) redirect('/posts');
+  if (post.post_author !== session.user.id) redirect(`/posts/${postId}`);
+
   const post_name = data.get("title") as string;
   const post_body = data.get("body") as string;
 
@@ -80,7 +89,7 @@ export async function editPostHandler(data: FormData) {
     .padStart(2, "0")}`;
 
   const postData: EditPostInput = {
-    id: Number(data.get("id")),
+    id: postId,
     post_name,
     post_body,
     post_edit_date,
@@ -96,7 +105,13 @@ export async function deletePostAction(formData: FormData) {
   const id = Number(formData.get("id"));
   if (!Number.isFinite(id)) throw new Error("Invalid id");
 
+  const { data: session } = await auth.getSession();
+  if (!session?.user) redirect('/auth/sign-in');
+
+  const post = await getPostById(id);
+  if (!post || post.post_author !== session.user.id) redirect('/posts');
+
   await deletePostById(id);
   revalidatePath("/posts");
-  revalidatePath(`/posts/${id}`);
+  redirect('/posts');
 }

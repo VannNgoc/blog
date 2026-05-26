@@ -5,10 +5,11 @@ import { EditButton } from "@/ui/posts/EditButton";
 
 type PostCardProps = {
   post: PostRow;
-  isLoggedIn: boolean;
+  currentUserId?: string;
 };
 
-export function PostCard({ post, isLoggedIn }: PostCardProps) {
+export function PostCard({ post, currentUserId }: PostCardProps) {
+  const isOwner = !!currentUserId && currentUserId === post.post_author;
   return (
     <li className="rounded-lg border border-zinc-200 p-4 transition hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900 relative group">
       <Link href={`/posts/${post.id}`} className="block">
@@ -26,8 +27,8 @@ export function PostCard({ post, isLoggedIn }: PostCardProps) {
         </p>
       </Link>
       <div className="flex absolute top-2 right-2 gap-2">
-        {isLoggedIn && <DeletePostConfirmButton id={post.id} />}
-        {isLoggedIn && <EditButton id={post.id} />}
+        {isOwner && <DeletePostConfirmButton id={post.id} />}
+        {isOwner && <EditButton id={post.id} />}
       </div>
 
     </li>
