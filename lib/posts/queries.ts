@@ -4,7 +4,7 @@ import type { PostRow, PostWithAuthorRow } from "@/type/post";
 
 export async function getPosts() {
   const posts = (await sql`
-    SELECT id, post_name, post_date, post_body, post_tags
+    SELECT id, post_name, post_date, post_body, post_tags, post_author
     FROM "POSTS" WHERE access = 1
     ORDER BY post_date DESC, id DESC
   `) as PostRow[];
