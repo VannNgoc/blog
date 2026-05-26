@@ -28,5 +28,5 @@ export async function signUpWithEmail(
     await createUser(data.user);
   }
 
-  redirect('/');
+  redirect('/posts');
 }
