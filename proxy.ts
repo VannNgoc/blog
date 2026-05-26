@@ -16,5 +16,6 @@ export const config = {
     '/account/:path*',
     '/posts/create',
     '/posts/:id/edit',
+    '/dashboard'
   ],
 };

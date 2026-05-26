@@ -13,7 +13,7 @@ export default async function Dashbaord() {
       {session?.user && <CreatePostButton/>}
       <ul className="space-y-4 mt-6">
         {posts.map((p) => (
-          <PostCard key={p.id} post={p} isLoggedIn={!!session?.user}/>
+          <PostCard key={p.id} post={p} isAuthor={p.post_author === session?.user.id}/>
         ))}
       </ul>
     </main>
