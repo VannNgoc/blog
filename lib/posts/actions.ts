@@ -5,25 +5,27 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   createPostFormSchema,
+  editPostFormSchema,
   type CreatePostFormFields,
+  type EditPostFormFields,
 } from "@/schemas/post-form";
 import type { EditPostInput, NewPostInput, PostRow } from "@/type/post";
 import {auth} from '@/lib/auth/server'
 // Data-layer mutation functions
 export async function createPost(postData: NewPostInput) {
-  const { post_name, post_author, post_body, post_date } = postData;
+  const { post_name, post_author, post_body, post_date, access_type } = postData;
   await sql`
-    INSERT INTO "POSTS" (post_name, post_author, post_body, post_date)
-    VALUES (${post_name}, ${post_author}, ${post_body}, ${post_date})
+    INSERT INTO "POSTS" (post_name, post_author, post_body, post_date, access)
+    VALUES (${post_name}, ${post_author}, ${post_body}, ${post_date}, ${access_type})
   `;
   return "Post created successfully";
 }
 
 export async function editPost(postData: EditPostInput) {
-  const { id, post_name, post_body, post_edit_date } = postData;
+  const { id, post_name, post_body, post_edit_date, access_type } = postData;
   await sql`
     UPDATE "POSTS"
-    SET post_name = ${post_name}, post_body = ${post_body}, post_edit_date = ${post_edit_date}
+    SET post_name = ${post_name}, post_body = ${post_body}, post_edit_date = ${post_edit_date}, access = ${access_type}
     WHERE id = ${id}
   `;
   return "Post edited successfully";
@@ -40,7 +42,7 @@ export async function deletePostById(id: number): Promise<PostRow | null> {
 
 // Server action handlers that orchestrate mutations
 export async function createPostHandler(input: CreatePostFormFields) {
-  const { title: post_name, body: post_body } =
+  const { title: post_name, body: post_body, access: access_type } =
     createPostFormSchema.parse(input);
 
   const { data : session } = await auth.getSession();
@@ -58,6 +60,7 @@ export async function createPostHandler(input: CreatePostFormFields) {
       post_author: session?.user.id,
       post_body,
       post_date,
+      access_type
     };
     await createPost(postData);
     revalidatePath("/posts");
@@ -67,9 +70,9 @@ export async function createPostHandler(input: CreatePostFormFields) {
   }
 }
 
-export async function editPostHandler(data: FormData) {
-  const post_name = data.get("title") as string;
-  const post_body = data.get("body") as string;
+export async function editPostHandler(input: EditPostFormFields) {
+  const { id, title: post_name, body: post_body, access: access_type } =
+    editPostFormSchema.parse(input);
 
   const d = new Date();
   const year = d.getFullYear();
@@ -80,16 +83,17 @@ export async function editPostHandler(data: FormData) {
     .padStart(2, "0")}`;
 
   const postData: EditPostInput = {
-    id: Number(data.get("id")),
+    id,
     post_name,
     post_body,
     post_edit_date,
+    access_type,
   };
 
   await editPost(postData);
   revalidatePath("/posts");
-  revalidatePath(`/posts/${postData.id}`);
-  redirect(`/posts/${postData.id}`);
+  revalidatePath(`/posts/${id}`);
+  redirect(`/posts/${id}`);
 }
 
 export async function deletePostAction(formData: FormData) {

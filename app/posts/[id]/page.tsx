@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getAdjacentPosts, getPostById } from "@/lib/posts/queries";
 import Link from "next/link";
+import { auth } from '@/lib/auth/server'
 
 export default async function Page({
   params,
@@ -8,12 +9,14 @@ export default async function Page({
   params: { id: string };
 }) {
   // "1" when user visits /posts/1
+  const {data: session} = await auth.getSession();
+  const userID = session?.user.id || '';
   const { id } = await params;
   const postId = Number(id);
   if (Number.isNaN(postId)) notFound();
   const post = await getPostById(postId);
   if (!post) notFound();
-  const { newer, older } = await getAdjacentPosts({ id: post.id, post_date: post.post_date });
+  const { newer, older } = await getAdjacentPosts({ id: post.id, post_date: post.post_date, user_id: userID });
 
   return (
   <main className="container mx-auto p-4 text-center text-zinc-900 dark:text-zinc-50">
