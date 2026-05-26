@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function PostsPage() {
   const { data: session } = await auth.getSession();
-  const posts = await getPosts();
+  const posts = await getPosts(session?.user.id);
   return (
     <main className="container mx-auto p-4">
       <h1 className="mb-6 text-2xl font-semibold text-zinc-900 dark:text-zinc-50">Posts</h1>

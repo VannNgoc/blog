@@ -2,7 +2,7 @@ import "server-only";
 import { sql } from "@/lib/db";
 import type { PostRow, PostWithAuthorRow } from "@/type/post";
 
-export async function getPosts() {
+export async function getPosts(userID: string | undefined) {
   const posts = (await sql`
     SELECT
       p.id,
@@ -15,7 +15,7 @@ export async function getPosts() {
       u.username
     FROM "POSTS" AS p
     INNER JOIN "USERS" AS u ON p.post_author = u.id
-    WHERE p.access = 1
+    WHERE p.access = 1 or p.post_author = ${userID}
     ORDER BY post_date DESC, id DESC
   `) as PostWithAuthorRow[];
   return posts;
