@@ -28,7 +28,7 @@ describe("getPosts", () => {
   it("should return a list of posts ordered by date", async () => {
     mockSql.mockResolvedValueOnce([mockPost]);
 
-    const posts = await getPosts();
+    const posts = await getPosts(undefined, 1);
 
     expect(Array.isArray(posts)).toBe(true);
     expect(posts).toHaveLength(1);
@@ -41,7 +41,7 @@ describe("getPosts", () => {
   it("should return an empty array when no posts exist", async () => {
     mockSql.mockResolvedValueOnce([]);
 
-    const posts = await getPosts();
+    const posts = await getPosts(undefined, 1);
 
     expect(posts).toEqual([]);
   });
@@ -66,17 +66,21 @@ describe("getPostById", () => {
 });
 
 describe("getAdjacentPosts", () => {
+  // getAdjacentPosts calls sql 3 times: once synchronously for the accessFilter
+  // fragment, then twice (awaited) for the newer and older queries.
+  const mockFragment = {};
+
   describe("unauthenticated (no user_id)", () => {
     it("should return both newer and older posts when both exist", async () => {
       const currentDate = new Date("2024-01-02");
       const newerPost = { ...mockPost, id: 2, post_date: "2024-01-03", post_name: "Newer Post" };
       const olderPost = { ...mockPost, id: 3, post_date: "2024-01-01", post_name: "Older Post" };
 
-      mockSql.mockResolvedValueOnce([newerPost]).mockResolvedValueOnce([olderPost]);
+      mockSql.mockReturnValueOnce(mockFragment).mockResolvedValueOnce([newerPost]).mockResolvedValueOnce([olderPost]);
 
       const adjacent = await getAdjacentPosts({ id: 1, post_date: currentDate });
 
-      expect(mockSql).toHaveBeenCalledTimes(2);
+      expect(mockSql).toHaveBeenCalledTimes(3);
       expect(adjacent).toEqual({ newer: newerPost, older: olderPost });
     });
 
@@ -84,7 +88,7 @@ describe("getAdjacentPosts", () => {
       const currentDate = new Date("2024-01-03");
       const olderPost = { ...mockPost, id: 3, post_date: "2024-01-02", post_name: "Older Post" };
 
-      mockSql.mockResolvedValueOnce([]).mockResolvedValueOnce([olderPost]);
+      mockSql.mockReturnValueOnce(mockFragment).mockResolvedValueOnce([]).mockResolvedValueOnce([olderPost]);
 
       const adjacent = await getAdjacentPosts({ id: 2, post_date: currentDate });
 
@@ -96,7 +100,7 @@ describe("getAdjacentPosts", () => {
       const currentDate = new Date("2024-01-01");
       const newerPost = { ...mockPost, id: 2, post_date: "2024-01-02", post_name: "Newer Post" };
 
-      mockSql.mockResolvedValueOnce([newerPost]).mockResolvedValueOnce([]);
+      mockSql.mockReturnValueOnce(mockFragment).mockResolvedValueOnce([newerPost]).mockResolvedValueOnce([]);
 
       const adjacent = await getAdjacentPosts({ id: 3, post_date: currentDate });
 
@@ -111,11 +115,11 @@ describe("getAdjacentPosts", () => {
       const newerPost = { ...mockPost, id: 2, post_date: "2024-01-03", post_name: "Newer Post" };
       const olderPost = { ...mockPost, id: 3, post_date: "2024-01-01", post_name: "Older Post" };
 
-      mockSql.mockResolvedValueOnce([newerPost]).mockResolvedValueOnce([olderPost]);
+      mockSql.mockReturnValueOnce(mockFragment).mockResolvedValueOnce([newerPost]).mockResolvedValueOnce([olderPost]);
 
       const adjacent = await getAdjacentPosts({ id: 1, post_date: currentDate, user_id: "42" });
 
-      expect(mockSql).toHaveBeenCalledTimes(2);
+      expect(mockSql).toHaveBeenCalledTimes(3);
       expect(adjacent).toEqual({ newer: newerPost, older: olderPost });
     });
 
@@ -123,7 +127,7 @@ describe("getAdjacentPosts", () => {
       const currentDate = new Date("2024-01-03");
       const olderPost = { ...mockPost, id: 3, post_date: "2024-01-02", post_name: "Older Post" };
 
-      mockSql.mockResolvedValueOnce([]).mockResolvedValueOnce([olderPost]);
+      mockSql.mockReturnValueOnce(mockFragment).mockResolvedValueOnce([]).mockResolvedValueOnce([olderPost]);
 
       const adjacent = await getAdjacentPosts({ id: 2, post_date: currentDate, user_id: "42" });
 
@@ -134,7 +138,7 @@ describe("getAdjacentPosts", () => {
     it("should return undefined for both when no accessible adjacent posts exist", async () => {
       const currentDate = new Date("2024-01-01");
 
-      mockSql.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+      mockSql.mockReturnValueOnce(mockFragment).mockResolvedValueOnce([]).mockResolvedValueOnce([]);
 
       const adjacent = await getAdjacentPosts({ id: 1, post_date: currentDate, user_id: "42" });
 

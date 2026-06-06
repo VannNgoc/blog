@@ -12,6 +12,15 @@ jest.mock("@/lib/db", () => ({
   sql: jest.fn(),
 }));
 
+// Mock auth to avoid loading @neondatabase/auth ESM package in Jest
+jest.mock("@/lib/auth/server", () => ({
+  auth: {
+    getSession: jest.fn().mockResolvedValue({
+      data: { user: { id: "user-1" } },
+    }),
+  },
+}));
+
 import { createPostHandler, editPostHandler, deletePostAction } from "@/lib/posts/actions";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
