@@ -28,53 +28,66 @@ jest.mock("@/ui/posts/EditButton", () => ({
   ),
 }));
 
-const mockPost: PostRow = {
+const mockPost = {
   id: 1,
   post_name: "Hello World",
+  post_author: "user-1",
   post_date: "2024-03-15",
+  post_edit_date: null,
   post_body: "This is the body of the post.",
   post_tags: null,
+  access: 1,
+  username: "testuser",
 };
 
 describe("PostCard", () => {
   it("renders the post title", () => {
-    render(<PostCard post={mockPost} />);
+    render(<PostCard post={mockPost} isAuthor={false} />);
     expect(screen.getByText("Hello World")).toBeInTheDocument();
   });
 
   it("renders the post body", () => {
-    render(<PostCard post={mockPost} />);
+    render(<PostCard post={mockPost} isAuthor={false} />);
     expect(screen.getByText("This is the body of the post.")).toBeInTheDocument();
   });
 
   it("renders a formatted post date", () => {
-    render(<PostCard post={mockPost} />);
-    // toLocaleDateString output varies by environment, so check it's non-empty
+    render(<PostCard post={mockPost} isAuthor={false} />);
     const date = new Date("2024-03-15").toLocaleDateString();
     expect(screen.getByText(date)).toBeInTheDocument();
   });
 
   it("links to the correct post page", () => {
-    render(<PostCard post={mockPost} />);
+    render(<PostCard post={mockPost} isAuthor={false} />);
     const link = screen.getByRole("link", { name: /hello world/i });
     expect(link).toHaveAttribute("href", "/posts/1");
   });
 
-  it("renders the DeletePostConfirmButton with correct id", () => {
-    render(<PostCard post={mockPost} />);
+  it("renders the DeletePostConfirmButton with correct id when isAuthor", () => {
+    render(<PostCard post={mockPost} isAuthor={true} />);
     const btn = screen.getByTestId("confirm-delete-btn");
     expect(btn).toBeInTheDocument();
     expect(btn).toHaveAttribute("data-id", "1");
   });
 
-  it("renders the EditButton linking to the edit page", () => {
-    render(<PostCard post={mockPost} />);
+  it("does not render DeletePostConfirmButton when not author", () => {
+    render(<PostCard post={mockPost} isAuthor={false} />);
+    expect(screen.queryByTestId("confirm-delete-btn")).not.toBeInTheDocument();
+  });
+
+  it("renders the EditButton linking to the edit page when isAuthor", () => {
+    render(<PostCard post={mockPost} isAuthor={true} />);
     const editBtn = screen.getByTestId("edit-btn");
     expect(editBtn).toHaveAttribute("href", "/posts/1/edit");
   });
 
+  it("does not render EditButton when not author", () => {
+    render(<PostCard post={mockPost} isAuthor={false} />);
+    expect(screen.queryByTestId("edit-btn")).not.toBeInTheDocument();
+  });
+
   it("wraps content in a list item", () => {
-    const { container } = render(<PostCard post={mockPost} />);
+    const { container } = render(<PostCard post={mockPost} isAuthor={false} />);
     expect(container.querySelector("li")).toBeInTheDocument();
   });
 });

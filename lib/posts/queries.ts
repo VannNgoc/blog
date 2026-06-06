@@ -2,7 +2,16 @@ import "server-only";
 import { sql } from "@/lib/db";
 import type { PostRow, PostWithAuthorRow } from "@/type/post";
 
-export async function getPosts(userID: string | undefined) {
+import { PAGINATION_LIMIT } from '@/lib/constants'
+
+export async function getPostsCount({ isPublic }: { isPublic: boolean }){
+  const [{ count }] = isPublic
+  ? await sql`SELECT COUNT(*) FROM "POSTS" WHERE access = 1`
+  : await sql`SELECT COUNT(*) FROM "POSTS"`;
+  return count;
+}
+
+export async function getPosts(userID: string | undefined, currentPage: number) {
   const posts = (await sql`
     SELECT
       p.id,
@@ -17,11 +26,17 @@ export async function getPosts(userID: string | undefined) {
     INNER JOIN "USERS" AS u ON p.post_author = u.id
     WHERE p.access = 1
     ORDER BY post_date DESC, id DESC
+    LIMIT ${PAGINATION_LIMIT} OFFSET ${(currentPage - 1) * PAGINATION_LIMIT}
   `) as PostWithAuthorRow[];
   return posts;
 }
 
-export async function getUserPosts(userID: string) {
+export async function getUserPostsCount(userID: string) {
+  const [{ count }] = await sql`SELECT COUNT(*) FROM "POSTS" WHERE access = 1 OR post_author = ${userID}`;
+  return count;
+}
+
+export async function getUserPosts(userID: string, currentPage: number) {
   const posts = (await sql`
     SELECT
       p.id,
@@ -34,8 +49,9 @@ export async function getUserPosts(userID: string) {
       u.username
     FROM "POSTS" AS p
     INNER JOIN "USERS" AS u ON p.post_author = u.id
-    WHERE p.post_author = ${userID}
+    WHERE p.access = 1 OR p.post_author = ${userID}
     ORDER BY post_date DESC, id DESC
+    LIMIT ${PAGINATION_LIMIT} OFFSET ${(currentPage - 1) * PAGINATION_LIMIT}
   `) as PostWithAuthorRow[];
   return posts;
 }
