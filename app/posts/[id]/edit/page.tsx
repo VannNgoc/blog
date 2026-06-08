@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { getPostById } from "@/lib/posts/queries";
 import EditPostForm from "@/ui/posts/EditPostForm";
 import {auth} from "@/lib/auth/server";
