@@ -10,7 +10,8 @@ import {
   type EditPostFormFields,
 } from "@/schemas/post-form";
 import type { EditPostInput, NewPostInput, PostRow } from "@/type/post";
-import {auth} from '@/lib/auth/server'
+import { auth } from '@/lib/auth/server';
+import { getPostById } from '@/lib/posts/queries';
 // Data-layer mutation functions
 export async function createPost(postData: NewPostInput) {
   const { post_name, post_author, post_body, post_date, access_type } = postData;
@@ -71,8 +72,15 @@ export async function createPostHandler(input: CreatePostFormFields) {
 }
 
 export async function editPostHandler(input: EditPostFormFields) {
+  const { data: session } = await auth.getSession();
+  if (!session?.user) throw new Error("Not authenticated");
+
   const { id, title: post_name, body: post_body, access: access_type } =
     editPostFormSchema.parse(input);
+
+  const post = await getPostById(id);
+  if (!post) throw new Error("Post not found");
+  if (post.post_author !== session.user.id) throw new Error("Not authorised");
 
   const d = new Date();
   const year = d.getFullYear();
@@ -99,6 +107,13 @@ export async function editPostHandler(input: EditPostFormFields) {
 export async function deletePostAction(formData: FormData) {
   const id = Number(formData.get("id"));
   if (!Number.isFinite(id)) throw new Error("Invalid id");
+
+  const { data: session } = await auth.getSession();
+  if (!session?.user) throw new Error("Not authenticated");
+
+  const post = await getPostById(id);
+  if (!post) throw new Error("Post not found");
+  if (post.post_author !== session.user.id) throw new Error("Not authorised");
 
   await deletePostById(id);
   revalidatePath("/posts");
