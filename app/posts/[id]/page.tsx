@@ -16,6 +16,7 @@ export default async function Page({
   if (Number.isNaN(postId)) notFound();
   const post = await getPostById(postId);
   if (!post) notFound();
+  if (post.access !== 1 && post.post_author !== userID) notFound();
   const { newer, older } = await getAdjacentPosts({ id: post.id, post_date: post.post_date, user_id: userID });
 
   return (
