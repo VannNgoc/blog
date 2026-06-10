@@ -3,7 +3,7 @@ export type PostRow = {
   post_name: string;
   post_author: string;
   post_date: Date;
-  post_edit_date: Date;
+  post_edit_date: Date | null;
   post_body: string;
   access: number;
 };

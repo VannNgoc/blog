@@ -10,7 +10,7 @@ jest.mock("server-only", () => ({}));
 
 import { sql } from "@/lib/db";
 
-const mockSql = sql as jest.MockedFunction<any>;
+const mockSql = sql as unknown as jest.Mock;
 
 const mockPost = {
   id: 1,

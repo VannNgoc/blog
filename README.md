@@ -4,10 +4,11 @@ A personal blog and reflection journal I built while between jobs — partly to 
 
 Posts can be **public** (shared on the blog) or **private** (visible only to the author), so the same app works as both a public blog and a personal journal.
 
-<!-- screenshot: posts list -->
-<!-- screenshot: post detail page -->
+![Posts feed](docs/screenshots/posts-list.png)
 
-**Live site:** _coming soon_ <!-- add your deployment URL here -->
+![Post detail page](docs/screenshots/post-detail.png)
+
+**Live site:** [blog-kappa-beryl-77.vercel.app](https://blog-kappa-beryl-77.vercel.app)
 
 ## Features
 
