@@ -92,7 +92,18 @@ npm run test:coverage # with coverage report
 
 ## Roadmap
 
-- Rich text editing (Tiptap) — in progress
-- Tags and full-text search across posts
-- Public homepage surfacing recent posts
-- Calendar/streak view for reflection
+**Now — rich text editing** _(in progress)_
+
+- [ ] Tiptap editor in the post form, replacing the plain textarea
+- [ ] Sanitize stored HTML and render it styled on the post detail page
+
+**Next — discovery**
+
+- [ ] Tags on posts — create, and filter the feed by tag
+- [ ] Full-text search across posts (Postgres FTS)
+- [ ] Public homepage surfacing recent posts
+
+**Later — reflection and reach**
+
+- [ ] Calendar/streak view for reflection
+- [ ] RSS feed + SEO/Open Graph metadata
