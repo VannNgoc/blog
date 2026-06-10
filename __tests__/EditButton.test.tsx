@@ -1,11 +1,13 @@
 import '@testing-library/jest-dom'
 import { render, screen } from "@testing-library/react";
 import { EditButton } from "@/ui/posts/EditButton";
+import type { ReactNode } from "react";
 
 jest.mock("next/link", () => {
-  return ({ href, children, "aria-label": ariaLabel }: any) => (
-    <a href={href} aria-label={ariaLabel}>{children}</a>
-  );
+  function MockLink({ href, children, "aria-label": ariaLabel }: { href: string; children: ReactNode; "aria-label"?: string }) {
+    return <a href={href} aria-label={ariaLabel}>{children}</a>;
+  }
+  return MockLink;
 });
 
 describe("EditButton", () => {

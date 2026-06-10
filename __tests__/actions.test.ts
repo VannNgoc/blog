@@ -29,7 +29,7 @@ import { revalidatePath } from "next/cache";
 import { sql } from "@/lib/db";
 import { auth } from "@/lib/auth/server";
 
-const mockSql = sql as jest.MockedFunction<any>;
+const mockSql = sql as unknown as jest.Mock;
 const mockRedirect = redirect as jest.MockedFunction<typeof redirect>;
 const mockRevalidatePath = revalidatePath as jest.MockedFunction<typeof revalidatePath>;
 const mockAuth = auth as jest.Mocked<typeof auth>;

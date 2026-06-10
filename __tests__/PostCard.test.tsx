@@ -1,14 +1,18 @@
 import { render, screen } from "@testing-library/react";
 import { PostCard } from "@/ui/posts/PostCard";
-import type { PostRow } from "@/type/post";
+import type { PostWithAuthorRow } from "@/type/post";
+import type { ReactNode } from "react";
 
 // Mock Next.js Link
 jest.mock("next/link", () => {
-  return ({ href, children, className }: any) => (
-    <a href={href} className={className}>
-      {children}
-    </a>
-  );
+  function MockLink({ href, children, className }: { href: string; children: ReactNode; className?: string }) {
+    return (
+      <a href={href} className={className}>
+        {children}
+      </a>
+    );
+  }
+  return MockLink;
 });
 
 // Mock child action components
@@ -28,14 +32,13 @@ jest.mock("@/ui/posts/EditButton", () => ({
   ),
 }));
 
-const mockPost = {
+const mockPost: PostWithAuthorRow = {
   id: 1,
   post_name: "Hello World",
   post_author: "user-1",
-  post_date: "2024-03-15",
+  post_date: new Date("2024-03-15"),
   post_edit_date: null,
   post_body: "This is the body of the post.",
-  post_tags: null,
   access: 1,
   username: "testuser",
 };

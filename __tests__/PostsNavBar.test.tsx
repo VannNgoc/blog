@@ -2,7 +2,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { PostsNavBar } from "@/ui/posts/PostsNavBar";
 
 const mockPush = jest.fn();
-let mockPage = "1";
+let mockPage: string | null = "1";
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
@@ -42,7 +42,7 @@ describe("PostsNavBar", () => {
   });
 
   it("defaults to page 1 when no search param is set", () => {
-    mockPage = null as any;
+    mockPage = null;
     render(<PostsNavBar numberPosts={20} />);
     const buttons = screen.getAllByRole("button");
     expect(buttons[0].className).toContain("bg-gray-800");
