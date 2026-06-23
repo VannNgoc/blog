@@ -19,7 +19,8 @@ export async function getPosts(userID: string | undefined, currentPage: number) 
       p.post_author,
       p.post_date,
       p.post_edit_date,
-      p.post_body,
+      p.post_body_json,
+      p.post_description,
       p.access,
       u.username
     FROM "POSTS" AS p
@@ -44,7 +45,8 @@ export async function getUserPosts(userID: string, currentPage: number) {
       p.post_author,
       p.post_date,
       p.post_edit_date,
-      p.post_body,
+      p.post_body_json,
+      p.post_description,
       p.access,
       u.username
     FROM "POSTS" AS p
@@ -64,7 +66,8 @@ export async function getPostById(id: number) {
       p.post_author,
       p.post_date,
       p.post_edit_date,
-      p.post_body,
+      p.post_body_json,
+      p.post_description,
       p.access,
       u.username
     FROM "POSTS" AS p
@@ -80,7 +83,7 @@ export async function getAdjacentPosts(input: { id: number; post_date: Date; use
     : sql`access = 1`;
 
   const newer = (await sql`
-    SELECT id, post_name, post_date, post_body, post_tags
+    SELECT id, post_name, post_date
     FROM "POSTS"
     WHERE (
       post_date > ${input.post_date}
@@ -89,10 +92,10 @@ export async function getAdjacentPosts(input: { id: number; post_date: Date; use
     AND ${accessFilter}
     ORDER BY post_date ASC, id ASC
     LIMIT 1
-  `) as PostRow[];
+  `) as Pick<PostRow, "id" | "post_name" | "post_date">[];
 
   const older = (await sql`
-    SELECT id, post_name, post_date, post_body, post_tags
+    SELECT id, post_name, post_date
     FROM "POSTS"
     WHERE (
       post_date < ${input.post_date}
@@ -101,7 +104,7 @@ export async function getAdjacentPosts(input: { id: number; post_date: Date; use
     AND ${accessFilter}
     ORDER BY post_date DESC, id DESC
     LIMIT 1
-  `) as PostRow[];
+  `) as Pick<PostRow, "id" | "post_name" | "post_date">[];
 
   return { newer: newer[0], older: older[0] };
 }

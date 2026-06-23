@@ -1,7 +1,7 @@
 import Link from "next/link";
 
-export async function CreatePostButton() {
+export async function CreatePostButton({ href = "/posts/create" }: { href?: string } = {}) {
     return (
-        <Link href="/posts/create" className="btn">New Post</Link>
+        <Link href={href} className="btn">New Post</Link>
     )
 }
