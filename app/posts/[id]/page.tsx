@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getAdjacentPosts, getPostById } from "@/lib/posts/queries";
+import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
 import Link from "next/link";
 import { auth } from '@/lib/auth/server'
 
@@ -20,12 +21,15 @@ export default async function Page({
   const { newer, older } = await getAdjacentPosts({ id: post.id, post_date: post.post_date, user_id: userID });
 
   return (
-  <main className="container mx-auto p-4 text-center text-zinc-900 dark:text-zinc-50">
-    <h2 className="text-4xl tracking-wider text-zinc-900 dark:text-zinc-50">{post.post_name}</h2>
-    <p className="text-zinc-600 dark:text-zinc-400">{post.username}</p>
-    <p className="text-zinc-600 dark:text-zinc-400">{new Date(post.post_date).toLocaleDateString()}</p>
+  <main className="container mx-auto p-4 text-zinc-900 dark:text-zinc-50">
+    <div className="text-center">
+      <h2 className="text-4xl tracking-wider text-zinc-900 dark:text-zinc-50">{post.post_name}</h2>
+      <p className="text-zinc-600 dark:text-zinc-400">{post.username}</p>
+      <p className="text-zinc-600 dark:text-zinc-400">{new Date(post.post_date).toLocaleDateString()}</p>
+    </div>
     <hr className="my-4 border-zinc-200 dark:border-zinc-700"/>
-    <p className="mbs-4 text-left text-zinc-900 dark:text-zinc-100">{post.post_body}</p>
+
+    <SimpleEditor key={post.id} editable={false} initialContent={post.post_body_json} />
 
     <div className="mt-6 flex items-center justify-between">
       {older ? (

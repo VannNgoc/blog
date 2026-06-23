@@ -1,6 +1,18 @@
+@import '../styles/_variables.scss';
+@import '../styles/_keyframe-animations.scss';
+
 @import "tailwindcss";
 
+/*
+ * Dark mode is class-based: the `dark:` Tailwind variant and the CSS variables
+ * below both key off a `.dark` class on <html>. An inline script in the root
+ * layout sets that class from the user's saved preference (or the OS default)
+ * before first paint, so the app and the Tiptap editor stay in sync.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
+  color-scheme: light;
   --background: #ffffff;
   --foreground: #171717;
   /* Secondary text: ~7:1 on white (WCAG AAA for body) */
@@ -15,14 +27,13 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #f4f4f5;
-    /* ~6.5:1 on #0a0a0a — comfortable secondary text */
-    --muted-foreground: #a1a1aa;
-    --border-subtle: #3f3f46;
-  }
+.dark {
+  color-scheme: dark;
+  --background: #0a0a0a;
+  --foreground: #f4f4f5;
+  /* ~6.5:1 on #0a0a0a — comfortable secondary text */
+  --muted-foreground: #a1a1aa;
+  --border-subtle: #3f3f46;
 }
 
 @layer components {

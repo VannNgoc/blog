@@ -38,7 +38,13 @@ const mockPost: PostWithAuthorRow = {
   post_author: "user-1",
   post_date: new Date("2024-03-15"),
   post_edit_date: null,
-  post_body: "This is the body of the post.",
+  post_body_json: {
+    type: "doc",
+    content: [
+      { type: "paragraph", content: [{ type: "text", text: "This is the body of the post." }] },
+    ],
+  },
+  post_description: null,
   access: 1,
   username: "testuser",
 };
