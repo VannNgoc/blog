@@ -60,29 +60,35 @@ beforeEach(() => {
   });
 });
 
+const sampleDoc = {
+  type: "doc",
+  content: [{ type: "paragraph", content: [{ type: "text", text: "Some body content" }] }],
+};
+
 describe("createPostHandler", () => {
   it("should redirect to /posts after creating a post", async () => {
     mockSql.mockResolvedValueOnce([]);
 
     await createPostHandler({
+      json: sampleDoc,
       title: "My New Post",
-      body: "Some body content",
+      description: "",
       access: 1,
     });
 
     expect(mockRedirect).toHaveBeenCalledWith("/posts");
   });
 
-  it("should return an error if user is not authenticated", async () => {
+  it("should throw if user is not authenticated", async () => {
     (mockAuth.getSession as jest.Mock).mockResolvedValueOnce({ data: null });
 
-    const result = await createPostHandler({
+    await expect(createPostHandler({
+      json: sampleDoc,
       title: "My New Post",
-      body: "Some body content",
+      description: "",
       access: 1,
-    });
+    })).rejects.toThrow("Not authenticated");
 
-    expect(result).toBe("Error user is null");
     expect(mockRedirect).not.toHaveBeenCalled();
   });
 });
@@ -96,8 +102,9 @@ describe("editPostHandler", () => {
 
     await editPostHandler({
       id: 42,
+      json: sampleDoc,
       title: "Updated Title",
-      body: "Updated body",
+      description: "",
       access: 1,
     });
 
@@ -109,8 +116,9 @@ describe("editPostHandler", () => {
 
     await expect(editPostHandler({
       id: 42,
+      json: sampleDoc,
       title: "Updated Title",
-      body: "Updated body",
+      description: "",
       access: 1,
     })).rejects.toThrow("Not authenticated");
   });
@@ -120,8 +128,9 @@ describe("editPostHandler", () => {
 
     await expect(editPostHandler({
       id: 999,
+      json: sampleDoc,
       title: "Updated Title",
-      body: "Updated body",
+      description: "",
       access: 1,
     })).rejects.toThrow("Post not found");
   });
@@ -131,8 +140,9 @@ describe("editPostHandler", () => {
 
     await expect(editPostHandler({
       id: 42,
+      json: sampleDoc,
       title: "Updated Title",
-      body: "Updated body",
+      description: "",
       access: 1,
     })).rejects.toThrow("Not authorised");
   });

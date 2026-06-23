@@ -2,12 +2,14 @@ import Link from "next/link";
 
 type EditButtonProps = {
   id: number;
+  /** Base path for the post route, e.g. "/posts" or "/tiptap/posts". */
+  basePath?: string;
 };
 
-export function EditButton({ id }: EditButtonProps) {
+export function EditButton({ id, basePath = "/posts" }: EditButtonProps) {
   return (
     <Link
-      href={`/posts/${id}/edit`} aria-label="edit"
+      href={`${basePath}/${id}/edit`} aria-label="edit"
       className="text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
     >
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">

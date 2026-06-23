@@ -10,6 +10,12 @@ jest.mock("@/lib/posts/queries", () => ({
   getAdjacentPosts: jest.fn(),
 }));
 
+// Mock the Tiptap editor so the page test stays focused on access control
+// (avoids loading the full editor + extensions in jsdom).
+jest.mock("@/components/tiptap-templates/simple/simple-editor", () => ({
+  SimpleEditor: () => <div data-testid="post-body" />,
+}));
+
 // Mock auth to avoid loading @neondatabase/auth ESM package in Jest
 jest.mock("@/lib/auth/server", () => ({
   auth: {
