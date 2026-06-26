@@ -17,7 +17,7 @@ export default async function PostsPage({ searchParams }: { searchParams: Promis
 
   return (
     <main className="container mx-auto p-4">
-      <h1 className="mb-6 text-2xl font-semibold text-zinc-900 dark:text-zinc-50">Posts</h1>
+      <h1 className="mb-6 text-2xl font-semibold text-zinc-900 dark:text-zinc-50">Shared Posts</h1>
       {session?.user && <CreatePostButton/>}
       <PostsNavBar numberPosts={postCount}/>
       <ul className="space-y-4 mt-6">
