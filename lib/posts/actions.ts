@@ -51,11 +51,17 @@ export async function deletePostById(id: number): Promise<PostRow | null> {
 
 // Server action handlers that orchestrate mutations
 export async function createPostHandler(input: {
-  json: JSONContent;
+  // Tiptap document, serialized with JSON.stringify on the client. It must cross
+  // the server-action boundary as a string: ProseMirror builds each node's
+  // `attrs` with Object.create(null), and React's server-action serializer drops
+  // null-prototype objects, silently stripping all `attrs` (e.g. textAlign).
+  json: string;
   title: string;
   description: string;
   access: number;
 }) {
+  const body = JSON.parse(input.json) as JSONContent;
+
   const { title: post_name, description: post_description, access: access_type } =
     postMetaSchema.parse({
       title: input.title,
@@ -69,7 +75,7 @@ export async function createPostHandler(input: {
   const postData: NewPostInput = {
     post_name,
     post_author: session.user.id,
-    post_body: input.json,
+    post_body: body,
     post_description,
     post_date: today(),
     access_type,
@@ -81,11 +87,15 @@ export async function createPostHandler(input: {
 
 export async function editPostHandler(input: {
   id: number;
-  json: JSONContent;
+  // See createPostHandler: the document crosses as a string so node `attrs`
+  // (null-prototype objects) survive server-action serialization.
+  json: string;
   title: string;
   description: string;
   access: number;
 }) {
+  const body = JSON.parse(input.json) as JSONContent;
+
   const { title: post_name, description: post_description, access: access_type } =
     postMetaSchema.parse({
       title: input.title,
@@ -103,7 +113,7 @@ export async function editPostHandler(input: {
   const postData: EditPostInput = {
     id: input.id,
     post_name,
-    post_body: input.json,
+    post_body: body,
     post_description,
     post_edit_date: today(),
     access_type,

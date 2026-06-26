@@ -70,7 +70,7 @@ describe("createPostHandler", () => {
     mockSql.mockResolvedValueOnce([]);
 
     await createPostHandler({
-      json: sampleDoc,
+      json: JSON.stringify(sampleDoc),
       title: "My New Post",
       description: "",
       access: 1,
@@ -83,7 +83,7 @@ describe("createPostHandler", () => {
     (mockAuth.getSession as jest.Mock).mockResolvedValueOnce({ data: null });
 
     await expect(createPostHandler({
-      json: sampleDoc,
+      json: JSON.stringify(sampleDoc),
       title: "My New Post",
       description: "",
       access: 1,
@@ -102,7 +102,7 @@ describe("editPostHandler", () => {
 
     await editPostHandler({
       id: 42,
-      json: sampleDoc,
+      json: JSON.stringify(sampleDoc),
       title: "Updated Title",
       description: "",
       access: 1,
@@ -116,7 +116,7 @@ describe("editPostHandler", () => {
 
     await expect(editPostHandler({
       id: 42,
-      json: sampleDoc,
+      json: JSON.stringify(sampleDoc),
       title: "Updated Title",
       description: "",
       access: 1,
@@ -128,7 +128,7 @@ describe("editPostHandler", () => {
 
     await expect(editPostHandler({
       id: 999,
-      json: sampleDoc,
+      json: JSON.stringify(sampleDoc),
       title: "Updated Title",
       description: "",
       access: 1,
@@ -140,7 +140,7 @@ describe("editPostHandler", () => {
 
     await expect(editPostHandler({
       id: 42,
-      json: sampleDoc,
+      json: JSON.stringify(sampleDoc),
       title: "Updated Title",
       description: "",
       access: 1,
