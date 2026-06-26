@@ -4,6 +4,7 @@ import { PostCard } from "@/ui/posts/PostCard";
 import { CreatePostButton } from "@/ui/posts/createPostButton";
 import {PostsNavBar} from "@/ui/posts/PostsNavBar";
 import { auth } from '@/lib/auth/server';
+import { BlurFade } from "@/components/magicui/blur-fade";
 
 export const dynamic = 'force-dynamic';
 
@@ -20,8 +21,10 @@ export default async function PostsPage({ searchParams }: { searchParams: Promis
       {session?.user && <CreatePostButton/>}
       <PostsNavBar numberPosts={postCount}/>
       <ul className="space-y-4 mt-6">
-        {posts.map((p) => (
-          <PostCard key={p.id} post={p} isAuthor={p.post_author === session?.user.id}/>
+        {posts.map((p, i) => (
+          <BlurFade key={p.id} delay={i * 0.07} yOffset={4}>
+            <PostCard post={p} isAuthor={p.post_author === session?.user.id}/>
+          </BlurFade>
         ))}
       </ul>
     </main>
