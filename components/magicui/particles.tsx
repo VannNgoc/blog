@@ -19,6 +19,7 @@ interface ParticlesProps {
   className?: string;
   quantity?: number;
   color?: string;
+  darkColor?: string;
   size?: number;
   staticity?: number;
   ease?: number;
@@ -39,7 +40,8 @@ function hexToRgb(hex: string) {
 export function Particles({
   className,
   quantity = 100,
-  color = "#ffffff",
+  color = "#000000",
+  darkColor,
   size = 0.4,
   staticity = 50,
   ease = 50,
@@ -60,7 +62,13 @@ export function Particles({
     if (!ctx) return;
 
     const dpr = window.devicePixelRatio || 1;
-    const rgb = hexToRgb(color);
+
+    const resolveColor = () =>
+      darkColor && document.documentElement.classList.contains("dark")
+        ? darkColor
+        : color;
+
+    let rgb = hexToRgb(resolveColor());
 
     const initCanvas = () => {
       const { width, height } = container.getBoundingClientRect();
@@ -131,15 +139,26 @@ export function Particles({
     for (let i = 0; i < quantity; i++) circles.current.push(makeCircle());
     animate();
 
+    const onThemeChange = () => {
+      rgb = hexToRgb(resolveColor());
+    };
+
+    const observer = new MutationObserver(onThemeChange);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
     window.addEventListener("resize", initCanvas);
     container.addEventListener("mousemove", onMouseMove);
 
     return () => {
       cancelAnimationFrame(rafId.current);
+      observer.disconnect();
       window.removeEventListener("resize", initCanvas);
       container.removeEventListener("mousemove", onMouseMove);
     };
-  }, [color, quantity, size, staticity, ease, refresh]);
+  }, [color, darkColor, quantity, size, staticity, ease, refresh]);
 
   return (
     <div ref={containerRef} className={cn("absolute inset-0", className)}>

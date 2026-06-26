@@ -5,10 +5,11 @@ import { BlurFade } from "@/components/magicui/blur-fade";
 
 export default function Home() {
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden">
+    <div className="relative flex flex-1 items-center justify-center overflow-hidden">
       <Particles
-        quantity={80}
-        color="#a1a1aa"
+        quantity={120}
+        color="#000000"
+        darkColor="#a1a1aa"
         size={0.5}
         staticity={40}
         className="z-0"
