@@ -14,7 +14,7 @@ export function PostCard({ post, isAuthor }: PostCardProps) {
   const preview = post.post_description?.trim() || tiptapFirstBlockText(post.post_body_json);
 
   return (
-    <li className="rounded-lg border border-zinc-200 p-4 transition hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900 relative group">
+    <li className="relative rounded-lg border border-zinc-200 border-l-4 border-l-zinc-200 p-4 transition-all hover:border-l-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:border-l-zinc-700 dark:hover:border-l-zinc-400 dark:hover:bg-zinc-900 group">
       <Link href={`/posts/${post.id}`} className="block">
         <div className="flex justify-between items-start mb-2">
           <h2 className="text-lg font-medium text-zinc-900 dark:text-zinc-50">{post.post_name}</h2>
