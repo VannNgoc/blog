@@ -302,7 +302,10 @@ export function SimpleEditor({
 
   const handleSave = () => {
     if (!editor || isPending) return // bail out early
-    const json = editor.getJSON()
+    // Serialize to a string here: passing the raw getJSON() object through the
+    // server action drops every node's `attrs` (null-prototype objects that
+    // React's serializer won't encode), losing textAlign and heading levels.
+    const json = JSON.stringify(editor.getJSON())
     // Dispatch through a transition so Next applies the action's
     // revalidatePath() to the client router cache before redirecting —
     // otherwise the posts list can navigate to a stale cached entry.

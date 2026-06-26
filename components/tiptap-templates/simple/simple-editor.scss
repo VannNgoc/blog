@@ -83,6 +83,18 @@ body,
   }
 }
 
+/* Text alignment — the TextAlign extension outputs inline style="text-align: ..."
+   but explicit attribute selectors here prevent the page CSS cascade from
+   swallowing those values in both editable and read-only contexts. */
+.tiptap.ProseMirror {
+  p, h1, h2, h3, h4 {
+    &[style*="text-align: left"]    { text-align: left; }
+    &[style*="text-align: center"]  { text-align: center; }
+    &[style*="text-align: right"]   { text-align: right; }
+    &[style*="text-align: justify"] { text-align: justify; }
+  }
+}
+
 /* Read-only render (single-post view): flow inline within the page instead of
    being a full-viewport scroll area, and drop the editor's tall bottom gutter. */
 .simple-editor-wrapper--readonly {
