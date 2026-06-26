@@ -34,17 +34,6 @@ export default async function Page({
     <div className="mt-6 border-t border-zinc-200 pt-4 dark:border-zinc-700">
       {/* Mobile: full-width nav cards */}
       <div className="flex flex-col gap-3 sm:hidden">
-        {newer && (
-          <Link href={`/posts/${newer.id}`} className="flex items-center justify-between rounded-lg border border-zinc-200 p-4 transition hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900">
-            <div>
-              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">Next</p>
-              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{newer.post_name}</p>
-            </div>
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="ml-3 size-5 shrink-0 text-zinc-400 dark:text-zinc-500">
-              <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-            </svg>
-          </Link>
-        )}
         {older && (
           <Link href={`/posts/${older.id}`} className="flex items-center justify-between rounded-lg border border-zinc-200 p-4 transition hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="mr-3 size-5 shrink-0 text-zinc-400 dark:text-zinc-500">
@@ -54,6 +43,17 @@ export default async function Page({
               <p className="mb-1 text-xs font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">Previous</p>
               <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{older.post_name}</p>
             </div>
+          </Link>
+        )}
+        {newer && (
+          <Link href={`/posts/${newer.id}`} className="flex items-center justify-between rounded-lg border border-zinc-200 p-4 transition hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900">
+            <div>
+              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">Next</p>
+              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{newer.post_name}</p>
+            </div>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="ml-3 size-5 shrink-0 text-zinc-400 dark:text-zinc-500">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+            </svg>
           </Link>
         )}
       </div>
