@@ -89,3 +89,22 @@
     transform: rotate(360deg);
   }
 }
+
+@keyframes blurFadeIn {
+  from {
+    opacity: 0;
+    filter: blur(var(--bf-blur, 6px));
+    transform: translateY(var(--bf-y, 6px));
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+.blur-fade {
+  opacity: 0;
+  animation: blurFadeIn var(--bf-duration, 0.4s) ease-out forwards;
+  animation-delay: var(--bf-delay, 0s);
+}
