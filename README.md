@@ -4,9 +4,7 @@ A personal blog and reflection journal I built while between jobs — partly to 
 
 Posts can be **public** (shared on the blog) or **private** (visible only to the author), so the same app works as both a public blog and a personal journal.
 
-![Posts feed](docs/screenshots/posts-list.png)
-
-![Post detail page](docs/screenshots/post-detail.png)
+Posts feedPost detail page
 
 **Live site:** [blog-kappa-beryl-77.vercel.app](https://blog-kappa-beryl-77.vercel.app)
 
@@ -21,17 +19,23 @@ Posts can be **public** (shared on the blog) or **private** (visible only to the
 - **Dark mode** styling throughout with Tailwind CSS
 - **Unit and component tests** with Jest and React Testing Library
 
+
+
 ## Tech stack
 
-| Layer | Choice |
-| --- | --- |
-| Framework | [Next.js 16](https://nextjs.org) (App Router, React Server Components, Server Actions) |
-| UI | React 19, Tailwind CSS 4, Heroicons |
-| Database | [Neon](https://neon.tech) serverless Postgres, queried with tagged-template SQL |
-| Auth | Neon Auth (`@neondatabase/auth`) |
-| Validation | Zod 4 + React Hook Form |
-| Testing | Jest 30, React Testing Library |
-| Hosting | Vercel, with Analytics and Speed Insights |
+
+| Layer      | Choice                                                                                 |
+| ---------- | -------------------------------------------------------------------------------------- |
+| Framework  | [Next.js 16](https://nextjs.org) (App Router, React Server Components, Server Actions) |
+| UI         | React 19, Tailwind CSS 4, Heroicons                                                    |
+| Database   | [Neon](https://neon.tech) serverless Postgres, queried with tagged-template SQL        |
+| Auth       | Neon Auth (`@neondatabase/auth`)                                                       |
+| Validation | Zod 4 + React Hook Form                                                                |
+| Testing    | Jest 30, React Testing Library                                                         |
+| Hosting    | Vercel, with Analytics and Speed Insights                                              |
+
+
+
 
 ## Architecture notes
 
@@ -41,6 +45,8 @@ A few decisions I made deliberately:
 - **Server Actions over API routes.** Mutations (`lib/posts/actions.ts`) are Server Actions that validate input with Zod, check the session, verify authorship, and then call the data layer — keeping authorization next to the mutation it protects.
 - **Authorization at every entry point.** Listing queries filter by access level in SQL; the post detail and edit pages re-check access/authorship server-side, so private posts aren't reachable by URL guessing.
 - **Plain SQL over an ORM.** Queries use Neon's tagged-template driver directly. For an app this size I wanted to stay close to the SQL rather than learn an ORM's abstraction over it.
+
+
 
 ## Project structure
 
@@ -53,34 +59,32 @@ type/         TypeScript row/input types for posts
 __tests__/    Jest unit and component tests
 ```
 
+
+
 ## Running locally
 
 You'll need Node 20+ and a [Neon](https://neon.tech) project with Neon Auth enabled.
 
 1. Clone the repo and install dependencies:
-
-   ```bash
+  ```bash
    npm install
-   ```
-
+  ```
 2. Create a `.env` file with your Neon credentials (the connection string and Neon Auth keys from the Neon console):
-
-   ```bash
+  ```bash
    DATABASE_URL=...
    NEXT_PUBLIC_STACK_PROJECT_ID=...
    NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY=...
    STACK_SECRET_SERVER_KEY=...
    NEON_AUTH_BASE_URL=...
    NEON_AUTH_COOKIE_SECRET=...
-   ```
-
+  ```
 3. Start the dev server:
-
-   ```bash
+  ```bash
    npm run dev
-   ```
-
+  ```
    Then open [http://localhost:3000](http://localhost:3000).
+
+
 
 ## Tests
 
@@ -90,12 +94,14 @@ npm run test:watch    # watch mode
 npm run test:coverage # with coverage report
 ```
 
+
+
 ## Roadmap
 
-**Now — rich text editing** _(in progress)_
+**Now — rich text editing** *(in progress)*
 
-- [ ] Tiptap editor in the post form, replacing the plain textarea
-- [ ] Sanitize stored HTML and render it styled on the post detail page
+- [x] Tiptap editor in the post form, replacing the plain textarea
+- [x] Sanitize stored HTML and render it styled on the post detail page
 
 **Next — discovery**
 

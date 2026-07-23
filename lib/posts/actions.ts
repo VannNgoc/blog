@@ -1,5 +1,6 @@
 'use server';
 import "server-only";
+import { del } from "@vercel/blob";
 import { sql } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -7,6 +8,7 @@ import { postMetaSchema } from "@/schemas/post-form";
 import type { EditPostInput, NewPostInput, PostRow } from "@/type/post";
 import { auth } from '@/lib/auth/server';
 import { getPostById } from '@/lib/posts/queries';
+import { extractImagePathnames } from '@/lib/tiptap-utils';
 import type { JSONContent } from "@tiptap/core";
 
 /** Build today's date as YYYY-MM-DD for post_date / post_edit_date columns. */
@@ -110,6 +112,10 @@ export async function editPostHandler(input: {
   if (!post) throw new Error("Post not found");
   if (post.post_author !== session.user.id) throw new Error("Not authorised");
 
+  const oldPathnames = extractImagePathnames(post.post_body_json);
+  const newPathnames = new Set(extractImagePathnames(body));
+  const droppedPathnames = oldPathnames.filter((p) => !newPathnames.has(p));
+
   const postData: EditPostInput = {
     id: input.id,
     post_name,
@@ -122,6 +128,15 @@ export async function editPostHandler(input: {
   await editPost(postData);
   revalidatePath("/posts");
   revalidatePath(`/posts/${input.id}`);
+
+  if (droppedPathnames.length > 0) {
+    // Best-effort: the edit already succeeded, so a storage cleanup failure
+    // here shouldn't fail the save from the user's perspective.
+    await del(droppedPathnames).catch((error) => {
+      console.error("Failed to delete removed post images:", error);
+    });
+  }
+
   redirect(`/posts/${input.id}`);
 }
 
@@ -136,7 +151,17 @@ export async function deletePostAction(formData: FormData) {
   if (!post) throw new Error("Post not found");
   if (post.post_author !== session.user.id) throw new Error("Not authorised");
 
+  const pathnames = extractImagePathnames(post.post_body_json);
+
   await deletePostById(id);
   revalidatePath("/posts");
   revalidatePath(`/posts/${id}`);
+
+  if (pathnames.length > 0) {
+    // Best-effort: the post row is already gone, so a storage cleanup failure
+    // here shouldn't fail the delete action from the user's perspective.
+    await del(pathnames).catch((error) => {
+      console.error("Failed to delete post images:", error);
+    });
+  }
 }

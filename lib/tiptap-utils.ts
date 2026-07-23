@@ -1,3 +1,4 @@
+import type { JSONContent } from "@tiptap/core"
 import type { Node as PMNode } from "@tiptap/pm/model"
 import type { Transaction } from "@tiptap/pm/state"
 import { clsx, type ClassValue } from "clsx"
@@ -362,28 +363,109 @@ export const handleImageUpload = async (
   onProgress?: (event: { progress: number }) => void,
   abortSignal?: AbortSignal
 ): Promise<string> => {
-  // Validate file
-  if (!file) {
-    throw new Error("No file provided")
-  }
-
+  if (!file) throw new Error("No file provided")
   if (file.size > MAX_FILE_SIZE) {
-    throw new Error(
-      `File size exceeds maximum allowed (${MAX_FILE_SIZE / (1024 * 1024)}MB)`
-    )
+    throw new Error(`File size exceeds maximum allowed (${MAX_FILE_SIZE / (1024 * 1024)}MB)`)
   }
 
-  // For demo/testing: Simulate upload progress. In production, replace the following code
-  // with your own upload implementation.
-  for (let progress = 0; progress <= 100; progress += 10) {
-    if (abortSignal?.aborted) {
-      throw new Error("Upload cancelled")
+  const formData = new FormData()
+  formData.append("file", file)
+
+  const res = await fetch("/api/upload", {
+    method: "POST",
+    body: formData,
+    signal: abortSignal,
+  })
+
+  if (!res.ok) {
+    const { error } = await res.json().catch(() => ({ error: "Upload failed" }))
+    throw new Error(error)
+  }
+
+  onProgress?.({ progress: 100 })
+  const { url } = await res.json()
+  return url
+}
+
+/**
+ * Checks whether a Tiptap document embeds an `image` node whose `src` points
+ * at the given private-blob pathname, via our `/api/file?pathname=...` route.
+ * Used to confirm a requested pathname actually belongs to the post it's
+ * claimed to belong to, instead of trusting the `postId` query param alone.
+ */
+export function postReferencesPathname(
+  doc: JSONContent | undefined,
+  pathname: string
+): boolean {
+  if (!doc) return false
+
+  if (doc.type === "image" && typeof doc.attrs?.src === "string") {
+    try {
+      const src = new URL(doc.attrs.src, "http://localhost")
+      if (src.pathname === "/api/file" && src.searchParams.get("pathname") === pathname) {
+        return true
+      }
+    } catch {
+      // ignore malformed src values
     }
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    onProgress?.({ progress })
   }
 
-  return "/images/tiptap-ui-placeholder-image.jpg"
+  return (doc.content ?? []).some((child) => postReferencesPathname(child, pathname))
+}
+
+/**
+ * Collects every private-blob pathname referenced by `/api/file?pathname=...`
+ * image srcs in a post's document. Used to clean up storage when a post is deleted.
+ */
+export function extractImagePathnames(doc: JSONContent | undefined): string[] {
+  if (!doc) return []
+
+  const pathnames: string[] = []
+
+  if (doc.type === "image" && typeof doc.attrs?.src === "string") {
+    try {
+      const src = new URL(doc.attrs.src, "http://localhost")
+      const pathname = src.searchParams.get("pathname")
+      if (src.pathname === "/api/file" && pathname) {
+        pathnames.push(pathname)
+      }
+    } catch {
+      // ignore malformed src values
+    }
+  }
+
+  for (const child of doc.content ?? []) {
+    pathnames.push(...extractImagePathnames(child))
+  }
+
+  return pathnames
+}
+
+/**
+ * Tags every `/api/file?pathname=...` image src in a post's document with
+ * `postId`, so the serving route can look up that specific post's access
+ * level for viewers who aren't the uploader (e.g. anyone viewing a public post).
+ */
+export function withPostImageUrls(doc: JSONContent, postId: number): JSONContent {
+  const clone: JSONContent = { ...doc }
+
+  if (clone.type === "image" && typeof clone.attrs?.src === "string") {
+    try {
+      const src = new URL(clone.attrs.src, "http://localhost")
+      if (src.pathname === "/api/file" && src.searchParams.has("pathname")) {
+        src.searchParams.set("postId", String(postId))
+        clone.attrs = { ...clone.attrs, src: src.pathname + src.search }
+      }
+    } catch {
+      // ignore malformed src values
+    }
+  }
+
+  if (clone.content) {
+    clone.content = clone.content.map((child) => withPostImageUrls(child, postId))
+  }
+
+  return clone
 }
 
 type ProtocolOptions = {
