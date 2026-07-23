@@ -3,6 +3,7 @@ import { getAdjacentPosts, getPostById } from "@/lib/posts/queries";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
 import Link from "next/link";
 import { auth } from '@/lib/auth/server'
+import { withPostImageUrls } from '@/lib/tiptap-utils'
 
 export default async function Page({
   params,
@@ -29,7 +30,7 @@ export default async function Page({
     </div>
     <hr className="my-4 border-zinc-200 dark:border-zinc-700"/>
 
-    <SimpleEditor key={post.id} editable={false} initialContent={post.post_body_json} />
+    <SimpleEditor key={post.id} editable={false} initialContent={withPostImageUrls(post.post_body_json, post.id)} />
 
     <div className="mt-6 border-t border-zinc-200 pt-4 dark:border-zinc-700">
       {/* Mobile: full-width nav cards */}

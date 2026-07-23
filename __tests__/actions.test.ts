@@ -23,6 +23,11 @@ jest.mock("@/lib/auth/server", () => ({
 
 jest.mock("server-only", () => ({}));
 
+// Mock @vercel/blob to avoid loading its ESM-only @vercel/oidc dependency in Jest
+jest.mock("@vercel/blob", () => ({
+  del: jest.fn(),
+}));
+
 import { createPostHandler, editPostHandler, deletePostAction } from "@/lib/posts/actions";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";

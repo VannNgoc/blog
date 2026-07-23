@@ -13,6 +13,7 @@ import { Highlight } from "@tiptap/extension-highlight"
 import { Subscript } from "@tiptap/extension-subscript"
 import { Superscript } from "@tiptap/extension-superscript"
 import { Selection } from "@tiptap/extensions"
+import { FileHandler } from "@tiptap/extension-file-handler"
 
 // --- UI Primitives ---
 import { Button } from "@/components/tiptap-ui-primitive/button"
@@ -262,7 +263,15 @@ export function SimpleEditor({
       TaskList,
       TaskItem.configure({ nested: true }),
       Highlight.configure({ multicolor: true }),
-      Image,
+      Image.configure({
+        resize: {
+          enabled: true,
+          directions: ['top', 'bottom', 'left', 'right'], // can be any direction or diagonal combination
+          minWidth: 50,
+          minHeight: 50,
+          alwaysPreserveAspectRatio: true,
+        }
+      }),
       Typography,
       Superscript,
       Subscript,
@@ -273,6 +282,27 @@ export function SimpleEditor({
         limit: 3,
         upload: handleImageUpload,
         onError: (error) => console.error("Upload failed:", error),
+      }),
+      FileHandler.configure({
+        allowedMimeTypes: ["image/png", "image/jpeg", "image/gif", "image/webp"],
+        onDrop: (editor, files, pos) => {
+          files.forEach(async (file) => {
+            const url = await handleImageUpload(file) // same fn already used by ImageUploadNode
+            editor.chain().insertContentAt(pos, {
+              type: "image",
+              attrs: { src: url },
+            }).focus().run()
+          })
+        },
+        onPaste: (editor, files) => {
+          files.forEach(async (file) => {
+            const url = await handleImageUpload(file)
+            editor.chain().insertContentAt(
+              editor.state.selection.anchor,
+              { type: "image", attrs: { src: url } }
+            ).focus().run()
+          })
+        },
       }),
     ],
     content: initialContent ?? EMPTY_DOC,
