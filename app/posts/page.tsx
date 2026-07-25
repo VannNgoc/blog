@@ -19,7 +19,7 @@ export default async function PostsPage({ searchParams }: { searchParams: Promis
 
   return (
     <main className="container mx-auto p-4">
-      <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="my-4 flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">Shared Posts</h1>
         {session?.user && <CreatePostButton/>}
       </div>
