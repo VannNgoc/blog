@@ -37,7 +37,7 @@ export function PostsNavBar({ numberPosts } : { numberPosts: number }){
     });
 
     return(
-        <div className='post-nav-bar mt-8 flex justify-center gap-1.5'>
+        <div className='post-nav-bar my-8 flex justify-center gap-1.5'>
             {buttons}
         </div>
     );
