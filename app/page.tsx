@@ -17,7 +17,7 @@ export default function Home() {
       <div className="relative z-10 text-center">
         <TypingAnimation
           text="recollections"
-          duration={120}
+          duration={95}
           className="text-5xl font-medium tracking-widest text-zinc-800 dark:text-zinc-100"
           as="h1"
         />

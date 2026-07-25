@@ -6,7 +6,10 @@ let mockPage: string | null = "1";
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
-  useSearchParams: () => ({ get: (key: string) => (key === "page" ? mockPage : null) }),
+  // The real useSearchParams() returns a URLSearchParams-like object; PostsNavBar
+  // spreads it via `new URLSearchParams(searchParams)` to preserve other params
+  // (e.g. `q`), so the mock needs to actually behave like one, not just expose `get`.
+  useSearchParams: () => new URLSearchParams(mockPage != null ? { page: mockPage } : {}),
 }));
 
 beforeEach(() => {
@@ -22,9 +25,9 @@ describe("PostsNavBar", () => {
     expect(buttons).toHaveLength(3);
   });
 
-  it("renders 1 button for 10 or fewer posts", () => {
+  it("renders no buttons for 10 or fewer posts (single page)", () => {
     render(<PostsNavBar numberPosts={10} />);
-    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(screen.queryAllByRole("button")).toHaveLength(0);
   });
 
   it("renders no buttons when there are no posts", () => {
@@ -36,17 +39,17 @@ describe("PostsNavBar", () => {
     mockPage = "2";
     render(<PostsNavBar numberPosts={30} />);
     const buttons = screen.getAllByRole("button");
-    expect(buttons[1].className).toContain("bg-gray-800");
-    expect(buttons[0].className).not.toContain("bg-gray-800");
-    expect(buttons[2].className).not.toContain("bg-gray-800");
+    expect(buttons[1].className).toContain("bg-zinc-800");
+    expect(buttons[0].className).not.toContain("bg-zinc-800");
+    expect(buttons[2].className).not.toContain("bg-zinc-800");
   });
 
   it("defaults to page 1 when no search param is set", () => {
     mockPage = null;
     render(<PostsNavBar numberPosts={20} />);
     const buttons = screen.getAllByRole("button");
-    expect(buttons[0].className).toContain("bg-gray-800");
-    expect(buttons[1].className).not.toContain("bg-gray-800");
+    expect(buttons[0].className).toContain("bg-zinc-800");
+    expect(buttons[1].className).not.toContain("bg-zinc-800");
   });
 
   it("calls router.push with correct page param when a button is clicked", () => {
