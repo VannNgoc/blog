@@ -22,7 +22,7 @@ export default async function Page({
   const { newer, older } = await getAdjacentPosts({ id: post.id, post_date: post.post_date, user_id: userID });
 
   return (
-  <main className="mx-auto w-full max-w-[648px] p-4 pb-24 text-zinc-900 md:pb-4 dark:text-zinc-50">
+  <main className="mx-auto w-full max-w-prose p-4 pb-24 text-zinc-900 md:pb-4 dark:text-zinc-50">
     <div className="text-center">
       <h2 className="text-4xl tracking-wider text-zinc-900 dark:text-zinc-50">{post.post_name}</h2>
       <p className="text-zinc-600 dark:text-zinc-400">{post.username}</p>
