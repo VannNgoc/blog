@@ -5,7 +5,7 @@ import { EditorContent, EditorContext, useEditor } from "@tiptap/react"
 
 // --- Tiptap Core Extensions ---
 import { StarterKit } from "@tiptap/starter-kit"
-import { Image } from "@tiptap/extension-image"
+import { Image as TiptapImage } from "@tiptap/extension-image"
 import { TaskItem, TaskList } from "@tiptap/extension-list"
 import { TextAlign } from "@tiptap/extension-text-align"
 import { Typography } from "@tiptap/extension-typography"
@@ -26,6 +26,7 @@ import {
 
 // --- Tiptap Node ---
 import { ImageUploadNode } from "@/components/tiptap-node/image-upload-node/image-upload-node-extension"
+import { ImageNode } from "@/components/tiptap-node/image-node/image-node-extension"
 import { HorizontalRule } from "@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node-extension"
 import "@/components/tiptap-node/blockquote-node/blockquote-node.scss"
 import "@/components/tiptap-node/code-block-node/code-block-node.scss"
@@ -85,6 +86,19 @@ const EMPTY_DOC: JSONContent = {
   type: "doc",
   content: [{ type: "paragraph" }],
 }
+
+/** Image node with native lazy loading — posts can carry several images, and
+    most sit below the fold, so there's no reason to fetch them all up front. */
+const Image = TiptapImage.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      loading: {
+        default: "lazy",
+      },
+    }
+  },
+})
 
 export type SimpleEditorProps = {
   /** When provided, the editor saves as an edit of this post instead of creating a new one. */
@@ -263,15 +277,20 @@ export function SimpleEditor({
       TaskList,
       TaskItem.configure({ nested: true }),
       Highlight.configure({ multicolor: true }),
-      Image.configure({
-        resize: {
-          enabled: true,
-          directions: ['top', 'bottom', 'left', 'right'], // can be any direction or diagonal combination
-          minWidth: 50,
-          minHeight: 50,
-          alwaysPreserveAspectRatio: true,
-        }
-      }),
+      // Read-only content gets a skeleton-while-loading NodeView instead of
+      // resize handles, which have no purpose (and no way to interact with)
+      // once the editor isn't editable.
+      editable
+        ? Image.configure({
+            resize: {
+              enabled: true,
+              directions: ['top', 'bottom', 'left', 'right'], // can be any direction or diagonal combination
+              minWidth: 50,
+              minHeight: 50,
+              alwaysPreserveAspectRatio: true,
+            }
+          })
+        : ImageNode,
       Typography,
       Superscript,
       Subscript,
