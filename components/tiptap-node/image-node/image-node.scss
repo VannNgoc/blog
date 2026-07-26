@@ -32,4 +32,40 @@
   .tiptap-thread img {
     margin: 0;
   }
+
+  .tiptap-image-node {
+    display: grid;
+    margin: 2rem 0;
+  }
+
+  // Skeleton and image share the same grid cell so the image stays laid out
+  // (and thus eligible for `loading="lazy"` viewport detection) the whole
+  // time — hiding it via `display: none` instead would give it no layout
+  // box, and the browser would never consider it "near the viewport" to
+  // start fetching, leaving it stuck loading forever.
+  .tiptap-image-node-skeleton,
+  .tiptap-image-node img {
+    grid-area: 1 / 1;
+  }
+
+  .tiptap-image-node-skeleton {
+    min-height: 16rem;
+    border-radius: var(--tt-radius-xs, 0.25rem);
+  }
+
+  .tiptap-image-node img {
+    // CSS Grid's default stretch alignment doesn't apply to replaced elements
+    // (img) with unknown intrinsic size — without this, an unloaded image
+    // computes to 0x0 even inside a correctly-sized grid cell, which also
+    // means it never has a real layout box for `loading="lazy"` to measure
+    // against, so it never starts loading at all.
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: opacity 0.2s ease;
+  }
+
+  .tiptap-image-node-hidden {
+    opacity: 0;
+  }
 }
