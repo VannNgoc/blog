@@ -70,7 +70,12 @@ import { useCursorVisibility } from "@/hooks/use-cursor-visibility"
 import { ThemeToggle } from "@/components/tiptap-templates/simple/theme-toggle"
 
 // --- Lib ---
-import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
+import {
+  findImageNodePos,
+  getImageDimensions,
+  handleImageUpload,
+  MAX_FILE_SIZE,
+} from "@/lib/tiptap-utils"
 
 // --- Styles ---
 import "@/components/tiptap-templates/simple/simple-editor.scss"
@@ -306,20 +311,41 @@ export function SimpleEditor({
         allowedMimeTypes: ["image/png", "image/jpeg", "image/gif", "image/webp"],
         onDrop: (editor, files, pos) => {
           files.forEach(async (file) => {
-            const url = await handleImageUpload(file) // same fn already used by ImageUploadNode
+            const [url, dims] = await Promise.all([
+              handleImageUpload(file), // same fn already used by ImageUploadNode
+              getImageDimensions(file),
+            ])
             editor.chain().insertContentAt(pos, {
               type: "image",
               attrs: { src: url },
             }).focus().run()
+            // See the comment in image-upload-node.tsx: width/height are set as a
+            // follow-up update, not in the initial insert, so the built-in resize
+            // NodeView doesn't apply them as literal (unclamped) pixel styles.
+            if (dims) {
+              const nodePos = findImageNodePos(editor, url)
+              if (nodePos !== null) {
+                editor.chain().setNodeSelection(nodePos).updateAttributes("image", dims).run()
+              }
+            }
           })
         },
         onPaste: (editor, files) => {
           files.forEach(async (file) => {
-            const url = await handleImageUpload(file)
+            const [url, dims] = await Promise.all([
+              handleImageUpload(file),
+              getImageDimensions(file),
+            ])
             editor.chain().insertContentAt(
               editor.state.selection.anchor,
               { type: "image", attrs: { src: url } }
             ).focus().run()
+            if (dims) {
+              const nodePos = findImageNodePos(editor, url)
+              if (nodePos !== null) {
+                editor.chain().setNodeSelection(nodePos).updateAttributes("image", dims).run()
+              }
+            }
           })
         },
       }),
