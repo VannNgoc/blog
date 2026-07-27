@@ -462,6 +462,33 @@ const COMPRESS_MIN_DIMENSION = 400
 const COMPRESS_TARGET_BYTES = 200 * 1024
 const COMPRESS_QUALITY_STEPS = [0.8, 0.65, 0.5, 0.35, 0.2]
 
+let cachedEncodeFormat: "image/webp" | "image/jpeg" | null = null
+
+/**
+ * Per spec, canvas.toBlob() silently falls back to PNG if the requested type
+ * can't actually be encoded — and PNG is lossless, so it ignores the quality
+ * argument entirely. Several mobile Safari/WebView versions support decoding
+ * (displaying) WebP but not encoding it via canvas, which used to send every
+ * quality step in compressImageForUpload to the same oversized PNG, none of
+ * which hit the target — the resolution-shrinking fallback below would then
+ * crush the image down toward COMPRESS_MIN_DIMENSION trying to compensate,
+ * costing real quality on mobile that desktop browsers never hit. Detecting
+ * the actually-honored format up front and using JPEG (universal canvas
+ * encode support, and quality genuinely does something) avoids that.
+ */
+function detectCanvasEncodeFormat(): Promise<"image/webp" | "image/jpeg"> {
+  if (cachedEncodeFormat) return Promise.resolve(cachedEncodeFormat)
+  const canvas = document.createElement("canvas")
+  canvas.width = 2
+  canvas.height = 2
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => {
+      cachedEncodeFormat = blob?.type === "image/webp" ? "image/webp" : "image/jpeg"
+      resolve(cachedEncodeFormat)
+    }, "image/webp")
+  })
+}
+
 /**
  * Re-encodes an image client-side, before it's uploaded, so the bytes that
  * actually cross the network are small regardless of how large the original
@@ -492,7 +519,9 @@ export async function compressImageForUpload(file: File): Promise<File> {
   const ctx = canvas.getContext("2d")
   if (!ctx) return file
 
-  const outputName = file.name.replace(/\.[^/.]+$/, "") + ".webp"
+  const format = await detectCanvasEncodeFormat()
+  const extension = format === "image/webp" ? ".webp" : ".jpg"
+  const outputName = file.name.replace(/\.[^/.]+$/, "") + extension
   let smallest: Blob | null = null
   let maxDimension = COMPRESS_MAX_DIMENSION
 
@@ -504,12 +533,12 @@ export async function compressImageForUpload(file: File): Promise<File> {
 
     for (const quality of COMPRESS_QUALITY_STEPS) {
       const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, "image/webp", quality)
+        canvas.toBlob(resolve, format, quality)
       )
       if (!blob) continue
       if (!smallest || blob.size < smallest.size) smallest = blob
       if (blob.size <= COMPRESS_TARGET_BYTES) {
-        return new File([blob], outputName, { type: "image/webp" })
+        return new File([blob], outputName, { type: format })
       }
     }
 
@@ -517,7 +546,7 @@ export async function compressImageForUpload(file: File): Promise<File> {
     maxDimension = Math.max(COMPRESS_MIN_DIMENSION, Math.round(maxDimension * 0.7))
   }
 
-  return smallest ? new File([smallest], outputName, { type: "image/webp" }) : file
+  return smallest ? new File([smallest], outputName, { type: format }) : file
 }
 
 /**
