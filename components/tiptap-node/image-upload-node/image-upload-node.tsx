@@ -7,7 +7,6 @@ import { Button } from "@/components/tiptap-ui-primitive/button"
 import { CloseIcon } from "@/components/tiptap-icons/close-icon"
 import "@/components/tiptap-node/image-upload-node/image-upload-node.scss"
 import {
-  findImageNodePos,
   focusNextNode,
   getImageDimensions,
   isValidPosition,
@@ -468,6 +467,7 @@ export const ImageUploadNode: React.FC<NodeViewProps> = (props) => {
         const imageNodes = urls.map((url, index) => {
           const filename =
             files[index]?.name.replace(/\.[^/.]+$/, "") || "unknown"
+          const dims = dimensions[index]
           return {
             type: extension.options.type,
             attrs: {
@@ -475,6 +475,8 @@ export const ImageUploadNode: React.FC<NodeViewProps> = (props) => {
               src: url,
               alt: filename,
               title: filename,
+              imgWidth: dims?.width ?? null,
+              imgHeight: dims?.height ?? null,
             },
           }
         })
@@ -485,25 +487,6 @@ export const ImageUploadNode: React.FC<NodeViewProps> = (props) => {
           .deleteRange({ from: pos, to: pos + props.node.nodeSize })
           .insertContentAt(pos, imageNodes)
           .run()
-
-        // Set width/height as a follow-up updateAttributes (the same call the
-        // built-in resize handle's onCommit uses) instead of passing them into
-        // the initial insert: the resize NodeView's mount-time sizing applies
-        // width/height attrs as literal pixel styles with no container cap, so
-        // handing it raw camera-resolution numbers there blows the image up
-        // past its column and stretches it. A post-mount update just stores
-        // the attrs on the node without re-triggering that initial sizing.
-        urls.forEach((url, index) => {
-          const dims = dimensions[index]
-          if (!dims) return
-          const nodePos = findImageNodePos(props.editor, url)
-          if (nodePos === null) return
-          props.editor
-            .chain()
-            .setNodeSelection(nodePos)
-            .updateAttributes(extension.options.type, dims)
-            .run()
-        })
 
         focusNextNode(props.editor)
       }

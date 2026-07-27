@@ -18,6 +18,14 @@ export const ImageNode = TiptapImage.extend({
       loading: {
         default: "lazy",
       },
+      // Kept separate from the built-in width/height attrs — see the comment
+      // on the editable `Image` extension in simple-editor.tsx for why.
+      imgWidth: {
+        default: null,
+      },
+      imgHeight: {
+        default: null,
+      },
     }
   },
 
