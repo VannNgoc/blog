@@ -70,12 +70,7 @@ import { useCursorVisibility } from "@/hooks/use-cursor-visibility"
 import { ThemeToggle } from "@/components/tiptap-templates/simple/theme-toggle"
 
 // --- Lib ---
-import {
-  findImageNodePos,
-  getImageDimensions,
-  handleImageUpload,
-  MAX_FILE_SIZE,
-} from "@/lib/tiptap-utils"
+import { getImageDimensions, handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
 
 // --- Styles ---
 import "@/components/tiptap-templates/simple/simple-editor.scss"
@@ -100,6 +95,20 @@ const Image = TiptapImage.extend({
       ...this.parent?.(),
       loading: {
         default: "lazy",
+      },
+      // Deliberately separate from the built-in `width`/`height` attrs: those
+      // feed the resize NodeView's applyInitialSize(), which applies them as
+      // literal, unclamped pixel styles every time the NodeView is freshly
+      // constructed — not just on insert, but on any later remount ProseMirror
+      // decides to do (e.g. after deleting a nearby node shifts positions).
+      // Keeping the read-only skeleton's aspect-ratio data under its own name
+      // means that code path never sees it, so the editable image always
+      // falls back to measuring its live, correctly container-fit size.
+      imgWidth: {
+        default: null,
+      },
+      imgHeight: {
+        default: null,
       },
     }
   },
@@ -317,17 +326,8 @@ export function SimpleEditor({
             ])
             editor.chain().insertContentAt(pos, {
               type: "image",
-              attrs: { src: url },
+              attrs: { src: url, imgWidth: dims?.width ?? null, imgHeight: dims?.height ?? null },
             }).focus().run()
-            // See the comment in image-upload-node.tsx: width/height are set as a
-            // follow-up update, not in the initial insert, so the built-in resize
-            // NodeView doesn't apply them as literal (unclamped) pixel styles.
-            if (dims) {
-              const nodePos = findImageNodePos(editor, url)
-              if (nodePos !== null) {
-                editor.chain().setNodeSelection(nodePos).updateAttributes("image", dims).run()
-              }
-            }
           })
         },
         onPaste: (editor, files) => {
@@ -338,14 +338,8 @@ export function SimpleEditor({
             ])
             editor.chain().insertContentAt(
               editor.state.selection.anchor,
-              { type: "image", attrs: { src: url } }
+              { type: "image", attrs: { src: url, imgWidth: dims?.width ?? null, imgHeight: dims?.height ?? null } }
             ).focus().run()
-            if (dims) {
-              const nodePos = findImageNodePos(editor, url)
-              if (nodePos !== null) {
-                editor.chain().setNodeSelection(nodePos).updateAttributes("image", dims).run()
-              }
-            }
           })
         },
       }),

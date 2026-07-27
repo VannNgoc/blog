@@ -15,7 +15,10 @@ import {
   type NodeWithPos,
 } from "@tiptap/react"
 
-export const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+// Raw uploads get compressed client-side down to ~200KB before they're sent
+// (see compressImageForUpload), so this is just a sanity cap against picking
+// the wrong file entirely, not a limit users need to think about.
+export const MAX_FILE_SIZE = 25 * 1024 * 1024 // 25MB
 
 export const MAC_SYMBOLS: Record<string, string> = {
   mod: "⌘",
@@ -372,50 +375,53 @@ export const handleImageUpload = (
 
   // fetch() has no upload-progress signal, so real incremental progress
   // needs XMLHttpRequest's upload.onprogress instead.
-  return new Promise((resolve, reject) => {
-    const formData = new FormData()
-    formData.append("file", file)
+  return compressImageForUpload(file).then(
+    (uploadFile) =>
+      new Promise<string>((resolve, reject) => {
+        const formData = new FormData()
+        formData.append("file", uploadFile)
 
-    const xhr = new XMLHttpRequest()
-    xhr.open("POST", "/api/upload")
+        const xhr = new XMLHttpRequest()
+        xhr.open("POST", "/api/upload")
 
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable) {
-        onProgress?.({ progress: Math.round((event.loaded / event.total) * 100) })
-      }
-    }
-
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          resolve(JSON.parse(xhr.responseText).url)
-        } catch {
-          reject(new Error("Upload failed"))
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            onProgress?.({ progress: Math.round((event.loaded / event.total) * 100) })
+          }
         }
-      } else {
-        let message = "Upload failed"
-        try {
-          message = JSON.parse(xhr.responseText).error ?? message
-        } catch {
-          // response wasn't JSON — fall back to the generic message
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              resolve(JSON.parse(xhr.responseText).url)
+            } catch {
+              reject(new Error("Upload failed"))
+            }
+          } else {
+            let message = "Upload failed"
+            try {
+              message = JSON.parse(xhr.responseText).error ?? message
+            } catch {
+              // response wasn't JSON — fall back to the generic message
+            }
+            reject(new Error(message))
+          }
         }
-        reject(new Error(message))
-      }
-    }
 
-    xhr.onerror = () => reject(new Error("Upload failed"))
-    xhr.onabort = () => reject(new DOMException("Aborted", "AbortError"))
+        xhr.onerror = () => reject(new Error("Upload failed"))
+        xhr.onabort = () => reject(new DOMException("Aborted", "AbortError"))
 
-    if (abortSignal) {
-      if (abortSignal.aborted) {
-        xhr.abort()
-      } else {
-        abortSignal.addEventListener("abort", () => xhr.abort())
-      }
-    }
+        if (abortSignal) {
+          if (abortSignal.aborted) {
+            xhr.abort()
+          } else {
+            abortSignal.addEventListener("abort", () => xhr.abort())
+          }
+        }
 
-    xhr.send(formData)
-  })
+        xhr.send(formData)
+      })
+  )
 }
 
 /**
@@ -424,39 +430,94 @@ export const handleImageUpload = (
  * itself without waiting on a round trip. Returns null for unreadable files
  * instead of throwing, since this is a nice-to-have, not upload-blocking.
  */
-export function getImageDimensions(
-  file: File
-): Promise<{ width: number; height: number } | null> {
-  return new Promise((resolve) => {
+function loadImageElement(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file)
     const img = new Image()
     img.onload = () => {
-      resolve({ width: img.naturalWidth, height: img.naturalHeight })
+      resolve(img)
       URL.revokeObjectURL(url)
     }
     img.onerror = () => {
-      resolve(null)
+      reject(new Error("Could not load image"))
       URL.revokeObjectURL(url)
     }
     img.src = url
   })
 }
 
+export async function getImageDimensions(
+  file: File
+): Promise<{ width: number; height: number } | null> {
+  try {
+    const img = await loadImageElement(file)
+    return { width: img.naturalWidth, height: img.naturalHeight }
+  } catch {
+    return null
+  }
+}
+
+const COMPRESS_MAX_DIMENSION = 1600
+const COMPRESS_MIN_DIMENSION = 400
+const COMPRESS_TARGET_BYTES = 200 * 1024
+const COMPRESS_QUALITY_STEPS = [0.8, 0.65, 0.5, 0.35, 0.2]
+
 /**
- * Finds the document position of the first `image` node with the given `src`
- * and no `width` set yet. Used right after insertion, where a fresh upload's
- * position can shift once the chain that inserted it commits.
+ * Re-encodes an image client-side, before it's uploaded, so the bytes that
+ * actually cross the network are small regardless of how large the original
+ * photo was. Starts at COMPRESS_MAX_DIMENSION (comfortably more than this
+ * blog's ~650px content column ever needs) and steps quality down at that
+ * size; ordinary photos hit COMPRESS_TARGET_BYTES well before the bottom of
+ * that list. If even the lowest quality isn't enough — only realistic for
+ * low-redundancy content like noise, since quality alone can't do much
+ * there — the resolution itself is shrunk and the quality sweep repeats,
+ * which cuts bytes on any content. Falls back to the smallest variant
+ * produced if the size floor is reached without hitting the target: a
+ * worse-than-ideal upload beats blocking it outright.
+ *
+ * Animated GIFs are passed through untouched: re-encoding through a canvas
+ * only captures a single frame, which would silently kill the animation.
  */
-export function findImageNodePos(editor: Editor, src: string): number | null {
-  let foundPos: number | null = null
-  editor.state.doc.descendants((node, pos) => {
-    if (foundPos !== null) return false
-    if (node.type.name === "image" && node.attrs.src === src && node.attrs.width == null) {
-      foundPos = pos
-      return false
+export async function compressImageForUpload(file: File): Promise<File> {
+  if (file.type === "image/gif") return file
+
+  let img: HTMLImageElement
+  try {
+    img = await loadImageElement(file)
+  } catch {
+    return file // unreadable — let the upload proceed and the server reject it
+  }
+
+  const canvas = document.createElement("canvas")
+  const ctx = canvas.getContext("2d")
+  if (!ctx) return file
+
+  const outputName = file.name.replace(/\.[^/.]+$/, "") + ".webp"
+  let smallest: Blob | null = null
+  let maxDimension = COMPRESS_MAX_DIMENSION
+
+  while (true) {
+    const scale = Math.min(1, maxDimension / Math.max(img.naturalWidth, img.naturalHeight))
+    canvas.width = Math.round(img.naturalWidth * scale)
+    canvas.height = Math.round(img.naturalHeight * scale)
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+
+    for (const quality of COMPRESS_QUALITY_STEPS) {
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/webp", quality)
+      )
+      if (!blob) continue
+      if (!smallest || blob.size < smallest.size) smallest = blob
+      if (blob.size <= COMPRESS_TARGET_BYTES) {
+        return new File([blob], outputName, { type: "image/webp" })
+      }
     }
-  })
-  return foundPos
+
+    if (maxDimension <= COMPRESS_MIN_DIMENSION) break
+    maxDimension = Math.max(COMPRESS_MIN_DIMENSION, Math.round(maxDimension * 0.7))
+  }
+
+  return smallest ? new File([smallest], outputName, { type: "image/webp" }) : file
 }
 
 /**
