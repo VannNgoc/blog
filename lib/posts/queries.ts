@@ -82,29 +82,33 @@ export async function getAdjacentPosts(input: { id: number; post_date: Date; use
     ? sql`(access = 1 OR post_author = ${input.user_id})`
     : sql`access = 1`;
 
-  const newer = (await sql`
-    SELECT id, post_name, post_date
-    FROM "POSTS"
-    WHERE (
-      post_date > ${input.post_date}
-      OR (post_date = ${input.post_date} AND id > ${input.id})
-    )
-    AND ${accessFilter}
-    ORDER BY post_date ASC, id ASC
-    LIMIT 1
-  `) as Pick<PostRow, "id" | "post_name" | "post_date">[];
-
-  const older = (await sql`
-    SELECT id, post_name, post_date
-    FROM "POSTS"
-    WHERE (
-      post_date < ${input.post_date}
-      OR (post_date = ${input.post_date} AND id < ${input.id})
-    )
-    AND ${accessFilter}
-    ORDER BY post_date DESC, id DESC
-    LIMIT 1
-  `) as Pick<PostRow, "id" | "post_name" | "post_date">[];
+  const [newer, older] = (await Promise.all([
+    sql`
+      SELECT id, post_name, post_date
+      FROM "POSTS"
+      WHERE (
+        post_date > ${input.post_date}
+        OR (post_date = ${input.post_date} AND id > ${input.id})
+      )
+      AND ${accessFilter}
+      ORDER BY post_date ASC, id ASC
+      LIMIT 1
+    `,
+    sql`
+      SELECT id, post_name, post_date
+      FROM "POSTS"
+      WHERE (
+        post_date < ${input.post_date}
+        OR (post_date = ${input.post_date} AND id < ${input.id})
+      )
+      AND ${accessFilter}
+      ORDER BY post_date DESC, id DESC
+      LIMIT 1
+    `,
+  ])) as [
+    Pick<PostRow, "id" | "post_name" | "post_date">[],
+    Pick<PostRow, "id" | "post_name" | "post_date">[],
+  ];
 
   return { newer: newer[0], older: older[0] };
 }

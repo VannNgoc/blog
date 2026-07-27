@@ -607,27 +607,40 @@ export function extractImagePathnames(doc: JSONContent | undefined): string[] {
  * Tags every `/api/file?pathname=...` image src in a post's document with
  * `postId`, so the serving route can look up that specific post's access
  * level for viewers who aren't the uploader (e.g. anyone viewing a public post).
+ * Also marks the first image in the document as eager-load: it's almost
+ * always the LCP candidate on a post page, so lazy-loading it (the default
+ * for every other image) only delays the metric it's being measured by.
  */
 export function withPostImageUrls(doc: JSONContent, postId: number): JSONContent {
-  const clone: JSONContent = { ...doc }
+  let firstImageTagged = false
 
-  if (clone.type === "image" && typeof clone.attrs?.src === "string") {
-    try {
-      const src = new URL(clone.attrs.src, "http://localhost")
-      if (src.pathname === "/api/file" && src.searchParams.has("pathname")) {
-        src.searchParams.set("postId", String(postId))
-        clone.attrs = { ...clone.attrs, src: src.pathname + src.search }
+  function walk(node: JSONContent): JSONContent {
+    const clone: JSONContent = { ...node }
+
+    if (clone.type === "image" && typeof clone.attrs?.src === "string") {
+      try {
+        const src = new URL(clone.attrs.src, "http://localhost")
+        if (src.pathname === "/api/file" && src.searchParams.has("pathname")) {
+          src.searchParams.set("postId", String(postId))
+          clone.attrs = { ...clone.attrs, src: src.pathname + src.search }
+        }
+      } catch {
+        // ignore malformed src values
       }
-    } catch {
-      // ignore malformed src values
+      if (!firstImageTagged) {
+        firstImageTagged = true
+        clone.attrs = { ...clone.attrs, loading: "eager" }
+      }
     }
+
+    if (clone.content) {
+      clone.content = clone.content.map(walk)
+    }
+
+    return clone
   }
 
-  if (clone.content) {
-    clone.content = clone.content.map((child) => withPostImageUrls(child, postId))
-  }
-
-  return clone
+  return walk(doc)
 }
 
 type ProtocolOptions = {
