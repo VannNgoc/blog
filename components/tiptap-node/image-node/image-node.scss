@@ -49,6 +49,9 @@
   }
 
   .tiptap-image-node-skeleton {
+    // Fallback for posts saved before width/height attrs were captured —
+    // .tiptap-image-node's own `aspect-ratio` (set inline once known) sizes
+    // the shared grid row exactly, making this height irrelevant then.
     min-height: 16rem;
     border-radius: var(--tt-radius-xs, 0.25rem);
   }

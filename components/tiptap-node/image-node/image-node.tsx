@@ -11,11 +11,16 @@ import { NodeViewWrapper } from "@tiptap/react"
  * placeholder is worth it.
  */
 export const ImageNode: React.FC<NodeViewProps> = ({ node }) => {
-  const { src, alt, title } = node.attrs
+  const { src, alt, title, width, height } = node.attrs
   const [loaded, setLoaded] = useState(false)
 
+  // Reserves the exact space the image will occupy so the skeleton matches
+  // its final size and nothing shifts on load. Older posts saved before
+  // dimensions were captured fall back to the fixed min-height in the CSS.
+  const style = width && height ? { aspectRatio: `${width} / ${height}` } : undefined
+
   return (
-    <NodeViewWrapper className="tiptap-image-node" data-loaded={loaded}>
+    <NodeViewWrapper className="tiptap-image-node" data-loaded={loaded} style={style}>
       {!loaded && <div className="skeleton tiptap-image-node-skeleton" aria-hidden="true" />}
       <img
         src={src}

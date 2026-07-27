@@ -358,33 +358,105 @@ export function selectionWithinConvertibleTypes(
  * @param abortSignal Optional AbortSignal for cancelling the upload
  * @returns Promise resolving to the URL of the uploaded image
  */
-export const handleImageUpload = async (
+export const handleImageUpload = (
   file: File,
   onProgress?: (event: { progress: number }) => void,
   abortSignal?: AbortSignal
 ): Promise<string> => {
-  if (!file) throw new Error("No file provided")
+  if (!file) return Promise.reject(new Error("No file provided"))
   if (file.size > MAX_FILE_SIZE) {
-    throw new Error(`File size exceeds maximum allowed (${MAX_FILE_SIZE / (1024 * 1024)}MB)`)
+    return Promise.reject(
+      new Error(`File size exceeds maximum allowed (${MAX_FILE_SIZE / (1024 * 1024)}MB)`)
+    )
   }
 
-  const formData = new FormData()
-  formData.append("file", file)
+  // fetch() has no upload-progress signal, so real incremental progress
+  // needs XMLHttpRequest's upload.onprogress instead.
+  return new Promise((resolve, reject) => {
+    const formData = new FormData()
+    formData.append("file", file)
 
-  const res = await fetch("/api/upload", {
-    method: "POST",
-    body: formData,
-    signal: abortSignal,
+    const xhr = new XMLHttpRequest()
+    xhr.open("POST", "/api/upload")
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        onProgress?.({ progress: Math.round((event.loaded / event.total) * 100) })
+      }
+    }
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          resolve(JSON.parse(xhr.responseText).url)
+        } catch {
+          reject(new Error("Upload failed"))
+        }
+      } else {
+        let message = "Upload failed"
+        try {
+          message = JSON.parse(xhr.responseText).error ?? message
+        } catch {
+          // response wasn't JSON — fall back to the generic message
+        }
+        reject(new Error(message))
+      }
+    }
+
+    xhr.onerror = () => reject(new Error("Upload failed"))
+    xhr.onabort = () => reject(new DOMException("Aborted", "AbortError"))
+
+    if (abortSignal) {
+      if (abortSignal.aborted) {
+        xhr.abort()
+      } else {
+        abortSignal.addEventListener("abort", () => xhr.abort())
+      }
+    }
+
+    xhr.send(formData)
   })
+}
 
-  if (!res.ok) {
-    const { error } = await res.json().catch(() => ({ error: "Upload failed" }))
-    throw new Error(error)
-  }
+/**
+ * Reads an image file's pixel dimensions client-side, before/alongside upload,
+ * so the caller can store them as node attrs and size a skeleton or the img
+ * itself without waiting on a round trip. Returns null for unreadable files
+ * instead of throwing, since this is a nice-to-have, not upload-blocking.
+ */
+export function getImageDimensions(
+  file: File
+): Promise<{ width: number; height: number } | null> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file)
+    const img = new Image()
+    img.onload = () => {
+      resolve({ width: img.naturalWidth, height: img.naturalHeight })
+      URL.revokeObjectURL(url)
+    }
+    img.onerror = () => {
+      resolve(null)
+      URL.revokeObjectURL(url)
+    }
+    img.src = url
+  })
+}
 
-  onProgress?.({ progress: 100 })
-  const { url } = await res.json()
-  return url
+/**
+ * Finds the document position of the first `image` node with the given `src`
+ * and no `width` set yet. Used right after insertion, where a fresh upload's
+ * position can shift once the chain that inserted it commits.
+ */
+export function findImageNodePos(editor: Editor, src: string): number | null {
+  let foundPos: number | null = null
+  editor.state.doc.descendants((node, pos) => {
+    if (foundPos !== null) return false
+    if (node.type.name === "image" && node.attrs.src === src && node.attrs.width == null) {
+      foundPos = pos
+      return false
+    }
+  })
+  return foundPos
 }
 
 /**
