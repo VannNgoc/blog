@@ -11,12 +11,17 @@ export default async function Page({
   params: { id: string };
 }) {
   // "1" when user visits /posts/1
-  const {data: session} = await auth.getSession();
-  const userID = session?.user.id || '';
   const { id } = await params;
   const postId = Number(id);
   if (Number.isNaN(postId)) notFound();
-  const post = await getPostById(postId);
+
+  // Neither of these depends on the other's result, so run them concurrently
+  // instead of paying two sequential network round trips.
+  const [{ data: session }, post] = await Promise.all([
+    auth.getSession(),
+    getPostById(postId),
+  ]);
+  const userID = session?.user.id || '';
   if (!post) notFound();
   if (post.access !== 1 && post.post_author !== userID) notFound();
   const { newer, older } = await getAdjacentPosts({ id: post.id, post_date: post.post_date, user_id: userID });
