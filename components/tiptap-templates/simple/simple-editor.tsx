@@ -4,16 +4,9 @@ import { useEffect, useRef, useState, useTransition } from "react"
 import { EditorContent, EditorContext, useEditor } from "@tiptap/react"
 
 // --- Tiptap Core Extensions ---
-import { StarterKit } from "@tiptap/starter-kit"
 import { Image as TiptapImage } from "@tiptap/extension-image"
-import { TaskItem, TaskList } from "@tiptap/extension-list"
-import { TextAlign } from "@tiptap/extension-text-align"
-import { Typography } from "@tiptap/extension-typography"
-import { Highlight } from "@tiptap/extension-highlight"
-import { Subscript } from "@tiptap/extension-subscript"
-import { Superscript } from "@tiptap/extension-superscript"
-import { Selection } from "@tiptap/extensions"
 import { FileHandler } from "@tiptap/extension-file-handler"
+import { postSchemaExtensions } from "@/components/tiptap-templates/simple/post-schema-extensions"
 
 // --- UI Primitives ---
 import { Button } from "@/components/tiptap-ui-primitive/button"
@@ -27,7 +20,6 @@ import {
 // --- Tiptap Node ---
 import { ImageUploadNode } from "@/components/tiptap-node/image-upload-node/image-upload-node-extension"
 import { ImageNode } from "@/components/tiptap-node/image-node/image-node-extension"
-import { HorizontalRule } from "@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node-extension"
 import "@/components/tiptap-node/blockquote-node/blockquote-node.scss"
 import "@/components/tiptap-node/code-block-node/code-block-node.scss"
 import "@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node.scss"
@@ -279,18 +271,7 @@ export function SimpleEditor({
       },
     },
     extensions: [
-      StarterKit.configure({
-        horizontalRule: false,
-        link: {
-          openOnClick: false,
-          enableClickSelection: true,
-        },
-      }),
-      HorizontalRule,
-      TextAlign.configure({ types: ["heading", "paragraph"] }),
-      TaskList,
-      TaskItem.configure({ nested: true }),
-      Highlight.configure({ multicolor: true }),
+      ...postSchemaExtensions,
       // Read-only content gets a skeleton-while-loading NodeView instead of
       // resize handles, which have no purpose (and no way to interact with)
       // once the editor isn't editable.
@@ -305,10 +286,6 @@ export function SimpleEditor({
             }
           })
         : ImageNode,
-      Typography,
-      Superscript,
-      Subscript,
-      Selection,
       ImageUploadNode.configure({
         accept: "image/*",
         maxSize: MAX_FILE_SIZE,
