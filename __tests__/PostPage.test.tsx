@@ -1,8 +1,11 @@
-// Mock next/navigation so notFound() halts execution like the real one does
+// Mock next/navigation so notFound() halts execution like the real one does.
+// useRouter is also mocked since PostKeyboardNav (rendered by the page) calls
+// it — its actual push behavior is covered by PostKeyboardNav's own tests.
 jest.mock("next/navigation", () => ({
   notFound: jest.fn(() => {
     throw new Error("NEXT_NOT_FOUND");
   }),
+  useRouter: jest.fn(() => ({ push: jest.fn() })),
 }));
 
 jest.mock("@/lib/posts/queries", () => ({

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getAdjacentPosts, getPostById } from "@/lib/posts/queries";
 import { PostContent } from "@/components/tiptap-templates/simple/post-content";
+import { PostKeyboardNav } from "@/ui/posts/PostKeyboardNav";
 import Link from "next/link";
 import { auth } from '@/lib/auth/server'
 import { withPostImageUrls } from '@/lib/tiptap-utils'
@@ -28,6 +29,11 @@ export default async function Page({
 
   return (
   <main className="mx-auto w-full max-w-prose p-4 pb-24 text-zinc-900 md:pb-4 dark:text-zinc-50">
+    <PostKeyboardNav
+      key={`keyboard-nav-${post.id}`}
+      nextHref={newer ? `/posts/${newer.id}` : undefined}
+      previousHref={older ? `/posts/${older.id}` : undefined}
+    />
     <div className="text-center">
       <h2 className="text-4xl tracking-wider text-zinc-900 dark:text-zinc-50">{post.post_name}</h2>
       <p className="text-zinc-600 dark:text-zinc-400">{post.username}</p>
