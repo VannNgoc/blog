@@ -1,10 +1,9 @@
-"use client"
-
-import { EditorContent, EditorContext, useEditor } from "@tiptap/react"
+import { renderToReactElement } from "@tiptap/static-renderer"
 import type { JSONContent } from "@tiptap/core"
 
 import { postSchemaExtensions } from "@/components/tiptap-templates/simple/post-schema-extensions"
-import { ImageNode } from "@/components/tiptap-node/image-node/image-node-extension"
+import { StaticImageNode } from "@/components/tiptap-node/image-node/image-node-static-extension"
+import { PostImageLoader } from "@/components/tiptap-node/image-node/post-image-loader"
 
 // --- Styles ---
 // Same stylesheet SimpleEditor uses: it already carries the
@@ -22,34 +21,28 @@ export type PostContentProps = {
   content: JSONContent
 }
 
+const staticExtensions = [...postSchemaExtensions, StaticImageNode]
+
 /**
- * Renders a saved post's Tiptap document for reading. Deliberately separate
- * from SimpleEditor: that component's toolbar, image upload, and drag/drop
- * handling extensions are dead weight for a reader who can't edit anything,
- * and were showing up as ~700KB of unnecessary JS on every post view.
+ * Renders a saved post's Tiptap document for reading. Statically rendered
+ * on the server via `@tiptap/static-renderer` instead of mounting a live
+ * ProseMirror editor: the read path never edits anything, so paying for the
+ * editor's client JS just to display text and images was pure overhead —
+ * and worse, meant the whole post body (including the LCP image) didn't
+ * exist in the DOM until that JS downloaded and ran, making it invisible to
+ * the browser's HTML preloader. `PostImageLoader` is the only client-side
+ * piece left, and it only runs the skeleton-while-loading effect on images.
  */
 export function PostContent({ content }: PostContentProps) {
-  const editor = useEditor({
-    immediatelyRender: false,
-    editable: false,
-    editorProps: {
-      attributes: {
-        class: "simple-editor",
-      },
-    },
-    extensions: [...postSchemaExtensions, ImageNode],
-    content,
-  })
+  const rendered = renderToReactElement({ content, extensions: staticExtensions })
 
   return (
     <div className="simple-editor-wrapper simple-editor-wrapper--readonly">
-      <EditorContext.Provider value={{ editor }}>
-        <EditorContent
-          editor={editor}
-          role="presentation"
-          className="simple-editor-content"
-        />
-      </EditorContext.Provider>
+      <div className="simple-editor-content" role="presentation">
+        <PostImageLoader className="tiptap ProseMirror simple-editor">
+          {rendered}
+        </PostImageLoader>
+      </div>
     </div>
   )
 }
