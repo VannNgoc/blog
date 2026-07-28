@@ -10,12 +10,20 @@ import { BlurFade } from "@/components/magicui/blur-fade";
 export const dynamic = 'force-dynamic';
 
 export default async function PostsPage({ searchParams }: { searchParams: Promise<{ page?: string; q?: string }> }) {
-  const { data: session } = await auth.getSession();
-  const { page: pageParam, q } = await searchParams;
+  // auth.getSession() and searchParams don't depend on each other, and
+  // neither does the posts/count query pair below — running each pair in
+  // parallel instead of four sequential awaits cuts the round trips this
+  // force-dynamic page pays on every request roughly in half.
+  const [{ data: session }, { page: pageParam, q }] = await Promise.all([
+    auth.getSession(),
+    searchParams,
+  ]);
   const page = Number(pageParam) || 1;
 
-  const posts = q ? await getSearchedPosts(q, undefined, page) : await getPosts(session?.user.id, page);
-  const postCount = q ? await getSearchedPostsCount(q) : await getPostsCount({ isPublic: true });
+  const [posts, postCount] = await Promise.all([
+    q ? getSearchedPosts(q, undefined, page) : getPosts(session?.user.id, page),
+    q ? getSearchedPostsCount(q) : getPostsCount({ isPublic: true }),
+  ]);
 
   return (
     <main className="container mx-auto p-4">
