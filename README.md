@@ -89,7 +89,15 @@ You'll need Node 20+ and a [Neon](https://neon.tech) project with Neon Auth enab
    NEON_AUTH_BASE_URL=...
    NEON_AUTH_COOKIE_SECRET=...
    BLOB_READ_WRITE_TOKEN=...
+   CRON_SECRET=...
   ```
+   `CRON_SECRET` authorizes the `/api/cron/cleanup-blobs` route, which Vercel Cron
+   calls daily (see `vercel.json`) to delete blob images no longer referenced by
+   any post — e.g. images uploaded while composing a post that was never saved,
+   or whose image was removed before the first save. Any random string works;
+   Vercel sets the same value as an `Authorization: Bearer` header when it
+   triggers the cron job. Not required for local dev unless you're testing the
+   route directly.
 3. Run the SQL migrations in `sql/` against your database (via the Neon console's SQL editor or `psql`) to set up full-text search.
 4. Start the dev server:
   ```bash

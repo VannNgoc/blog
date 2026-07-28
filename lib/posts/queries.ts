@@ -77,6 +77,12 @@ export async function getPostById(id: number) {
   return rows[0];
 }
 
+/** Every post's body, for sweeping storage that's no longer referenced by any post. */
+export async function getAllPostBodies() {
+  const rows = (await sql`SELECT post_body_json FROM "POSTS"`) as Pick<PostRow, "post_body_json">[];
+  return rows;
+}
+
 export async function getAdjacentPosts(input: { id: number; post_date: Date; user_id?: string }) {
   const accessFilter = input.user_id
     ? sql`(access = 1 OR post_author = ${input.user_id})`
