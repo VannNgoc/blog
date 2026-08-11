@@ -14,11 +14,16 @@ export default function Home() {
         staticity={40}
         className="z-0"
       />
-      <div className="relative z-10 text-center">
+      <div className="relative z-10 px-4 text-center">
+        {/* `tracking-widest` adds 0.1em per character, so this 13-character
+            word grows much faster than its font size suggests — at a fixed
+            text-5xl it nearly touched both edges of a phone while looking
+            undersized in a desktop hero. Stepping the size (and keeping px-4 as
+            a guaranteed gutter) fixes both ends. */}
         <TypingAnimation
           text="recollections"
           duration={95}
-          className="text-5xl font-medium tracking-widest text-foreground"
+          className="text-4xl font-medium tracking-widest text-foreground sm:text-5xl md:text-6xl"
           as="h1"
         />
         <BlurFade delay={1.6} yOffset={4}>
@@ -31,11 +36,17 @@ export default function Home() {
               target rather than a line of text: a bordered pill clears the
               44px minimum touch size and reads as pressable without breaking
               the greyscale palette. The arrow nudges right on hover — the same
-              forward/back motion language the post pages use. */}
+              forward/back motion language the post pages use.
+
+              `mt-12` is 3x the 16px gap holding the title and tagline together,
+              which is what makes this read as a separate action rather than a
+              third line of the same block; 2x is too ambiguous to group by.
+              A bordered element also needs more margin than the bare text link
+              this replaced, since the visible edge sits above the words. */}
           <Link
             href="/posts"
             transitionTypes={["nav-forward"]}
-            className="group mt-10 inline-flex min-h-11 items-center gap-2 rounded-full border border-(--faint-foreground) px-6 py-3 tracking-wide text-muted-foreground transition-colors hover:border-(--foreground) hover:bg-zinc-50 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--muted-foreground) dark:hover:bg-zinc-900"
+            className="group mt-12 inline-flex min-h-11 items-center gap-2 rounded-full border border-(--faint-foreground) px-6 py-3 tracking-wide text-muted-foreground transition-colors hover:border-(--foreground) hover:bg-zinc-50 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--muted-foreground) dark:hover:bg-zinc-900"
           >
             read posts
             <svg
