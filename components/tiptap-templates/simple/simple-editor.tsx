@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useRef, useState, useTransition } from "react"
+import { useCallback, useEffect, useRef, useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { EditorContent, EditorContext, useEditor } from "@tiptap/react"
 
 // --- Tiptap Core Extensions ---
@@ -57,12 +58,15 @@ import { LinkIcon } from "@/components/tiptap-icons/link-icon"
 import { useIsBreakpoint } from "@/hooks/use-is-breakpoint"
 import { useWindowSize } from "@/hooks/use-window-size"
 import { useCursorVisibility } from "@/hooks/use-cursor-visibility"
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard"
 
 // --- Components ---
 import { ThemeToggle } from "@/components/tiptap-templates/simple/theme-toggle"
+import { UnsavedChangesDialog } from "@/ui/posts/UnsavedChangesDialog"
 
 // --- Lib ---
 import { getImageDimensions, handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
+import { ACCESS_DRAFT } from "@/lib/constants"
 
 // --- Styles ---
 import "@/components/tiptap-templates/simple/simple-editor.scss"
@@ -115,7 +119,7 @@ export type SimpleEditorProps = {
   initialTitle?: string
   /** Initial description shown as the list preview (edit view). */
   initialDescription?: string
-  /** Initial access level: 1 = public, 2 = private. Defaults to public. */
+  /** Initial access level: 1 = public, 2 = private, 4 = draft. Defaults to public. */
   initialAccess?: number
   /** When false, renders read-only: no toolbar, no title/access fields. Defaults to true. */
   editable?: boolean
@@ -125,11 +129,13 @@ const MainToolbarContent = ({
   onHighlighterClick,
   onLinkClick,
   onSave,
+  onCancel,
   isMobile,
 }: {
   onHighlighterClick: () => void
   onLinkClick: () => void
   onSave: () => void
+  onCancel: () => void
   isMobile: boolean
 }) => {
   return (
@@ -202,6 +208,9 @@ const MainToolbarContent = ({
       <ToolbarSeparator />
 
       <ToolbarGroup>
+        <Button variant="ghost" onClick={onCancel}>
+          Cancel
+        </Button>
         <Button variant="primary" onClick={onSave}>
           Save
         </Button>
@@ -346,21 +355,69 @@ export function SimpleEditor({
   // the effective view during render instead of resetting state in an effect.
   const currentView = isMobile ? mobileView : "main"
 
-  const handleSave = () => {
+  const router = useRouter()
+  // Tiptap has no built-in dirty flag, so compare against a snapshot taken once
+  // the editor has loaded its initial document.
+  const snapshotRef = useRef<{ title: string; description: string; access: number; json: string } | null>(null)
+  const latestRef = useRef({ title, description, access })
+
+  useEffect(() => {
+    latestRef.current = { title, description, access }
+  }, [title, description, access])
+
+  useEffect(() => {
+    if (!editor || !editable || snapshotRef.current) return
+    snapshotRef.current = {
+      title: initialTitle,
+      description: initialDescription,
+      access: initialAccess,
+      json: JSON.stringify(editor.getJSON()),
+    }
+  }, [editor, editable, initialTitle, initialDescription, initialAccess])
+
+  // Stable identity so the guard's listeners don't re-attach on every keystroke;
+  // it reads the latest values through refs when actually called.
+  const isDirty = useCallback(() => {
+    const snapshot = snapshotRef.current
+    if (!editor || !snapshot) return false
+    const { title, description, access } = latestRef.current
+    return (
+      title !== snapshot.title ||
+      description !== snapshot.description ||
+      access !== snapshot.access ||
+      JSON.stringify(editor.getJSON()) !== snapshot.json
+    )
+  }, [editor])
+
+  const { pending, requestNavigation, discardAndLeave, keepEditing } = useUnsavedChangesGuard({
+    isDirty,
+    onNavigate: (href) => router.push(href),
+  })
+
+  const savePost = (accessValue: number, redirectTo?: string) => {
     if (!editor || isPending) return // bail out early
     // Serialize to a string here: passing the raw getJSON() object through the
     // server action drops every node's `attrs` (null-prototype objects that
     // React's serializer won't encode), losing textAlign and heading levels.
     const json = JSON.stringify(editor.getJSON())
+    // The guard deliberately isn't disarmed here: a successful save redirects
+    // programmatically, which neither the click interceptor nor `beforeunload`
+    // reacts to. Clearing the snapshot up front would instead leave a *failed*
+    // save silently unguarded, letting the next click drop the user's work.
+    // Saving as a draft removes this post's view page, so a redirect back to it
+    // (e.g. Cancel on a private post, whose exit target *is* that page) would
+    // land on a 404. Drop it and let the action fall back to the drafts list.
+    const target =
+      accessValue === ACCESS_DRAFT && redirectTo === `/posts/${postId}` ? undefined : redirectTo
     // Dispatch through a transition so Next applies the action's
     // revalidatePath() to the client router cache before redirecting —
     // otherwise the posts list can navigate to a stale cached entry.
     startTransition(async () => {
       try {
         if (postId != null) {
-          await editPostHandler({ id: postId, json, title, description, access })
+          await editPostHandler({ id: postId, json, title, description, access: accessValue, redirectTo: target })
         } else {
-          await createPostHandler({ json, title, description, access })
+          await createPostHandler({ json, title, description, access: accessValue, redirectTo: target })
         }
       } catch (error) {
         // redirect() throws internally on success; only surface real failures
@@ -370,6 +427,18 @@ export function SimpleEditor({
       }
     })
   }
+
+  const handleSave = () => savePost(access)
+
+  // Where backing out lands. Keyed off the *saved* access level rather than the
+  // dropdown's current value: an unsaved switch to Public shouldn't send Cancel
+  // to a view page that doesn't exist yet.
+  const cancelHref =
+    initialAccess === ACCESS_DRAFT ? "/drafts" // drafts have no view page
+    : postId != null ? `/posts/${postId}`
+    : "/posts"
+
+  const handleCancel = () => requestNavigation(cancelHref)
 
   // Read-only render (single-post view): no toolbar, no metadata fields.
   if (!editable) {
@@ -404,6 +473,7 @@ export function SimpleEditor({
               onHighlighterClick={() => setMobileView("highlighter")}
               onLinkClick={() => setMobileView("link")}
               onSave={handleSave}
+              onCancel={handleCancel}
               isMobile={isMobile}
             />
           ) : (
@@ -429,6 +499,7 @@ export function SimpleEditor({
             aria-label="Access level"
             className="rounded-md border border-zinc-300 bg-white p-2 text-zinc-900 focus:border-blue-600 focus:outline-none dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-blue-500"
           >
+            <option value={ACCESS_DRAFT}>Draft</option>
             <option value={1}>Public</option>
             <option value={2}>Private</option>
           </select>
@@ -450,6 +521,14 @@ export function SimpleEditor({
           editor={editor}
           role="presentation"
           className="simple-editor-content"
+        />
+
+        <UnsavedChangesDialog
+          open={pending !== null}
+          isSaving={isPending}
+          onSaveAsDraft={() => savePost(ACCESS_DRAFT, pending?.href)}
+          onDiscard={discardAndLeave}
+          onKeepEditing={keepEditing}
         />
       </EditorContext.Provider>
     </div>

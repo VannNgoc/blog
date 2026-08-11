@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { PostWithAuthorRow } from "@/type/post";
 import { tiptapFirstBlockText } from "@/lib/tiptap-content";
+import { ACCESS_DRAFT } from "@/lib/constants";
 import { DeletePostConfirmButton } from "@/ui/posts/DeletePostConfirmationButton";
 import { EditButton } from "@/ui/posts/EditButton";
 
@@ -17,10 +18,14 @@ export function PostCard({ post, isAuthor, showAccessBadge = false }: PostCardPr
   // Prefer the author's description; fall back to the post's opening block.
   const preview = post.post_description?.trim() || tiptapFirstBlockText(post.post_body_json);
   const isPrivate = post.access !== 1;
+  const isDraft = post.access === ACCESS_DRAFT;
+  // A draft has no reader-facing page (see app/posts/[id]/page.tsx), so the
+  // card opens the editor instead — the only thing you can do with one.
+  const href = isDraft ? `/posts/${post.id}/edit` : `/posts/${post.id}`;
 
   return (
-    <li className="relative rounded-lg border border-zinc-200 border-l-4 border-l-zinc-200 p-4 transition-all hover:border-l-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:border-l-zinc-700 dark:hover:border-l-zinc-400 dark:hover:bg-zinc-900 group">
-      <Link href={`/posts/${post.id}`} className="block">
+    <li className={`relative rounded-lg border p-4 transition-all hover:border-l-zinc-800 hover:bg-zinc-50 dark:hover:border-l-zinc-400 dark:hover:bg-zinc-900 group ${isDraft ? "border-dashed border-zinc-300 border-l-4 border-l-zinc-300 dark:border-zinc-600 dark:border-l-zinc-600" : "border-zinc-200 border-l-4 border-l-zinc-200 dark:border-zinc-700 dark:border-l-zinc-700"}`}>
+      <Link href={href} className="block">
         <div className="flex justify-between items-start mb-2">
           <h2 className="text-lg font-medium text-zinc-900 dark:text-zinc-50">{post.post_name}</h2>
         </div>
