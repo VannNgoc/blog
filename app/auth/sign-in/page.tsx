@@ -14,13 +14,13 @@ export default function SignInForm() {
   return (
     <div className="flex flex-1 items-center justify-center px-4">
       <BlurFade className="w-full max-w-sm">
-        <h1 className="mb-8 text-center text-2xl font-medium tracking-wide text-zinc-800 dark:text-zinc-100">
+        <h1 className="mb-8 text-center text-2xl font-medium tracking-wide text-foreground">
           Sign in
         </h1>
 
         <form action={formAction} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="email" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            <label htmlFor="email" className="text-sm font-medium text-muted-foreground">
               Email
             </label>
             <input
@@ -34,7 +34,7 @@ export default function SignInForm() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="password" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            <label htmlFor="password" className="text-sm font-medium text-muted-foreground">
               Password
             </label>
             <input
@@ -56,7 +56,7 @@ export default function SignInForm() {
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="mt-6 text-center text-sm text-muted-foreground">
           No account?{' '}
           <Link href="sign-up" className="text-zinc-800 underline-offset-4 hover:underline dark:text-zinc-200">
             Create one

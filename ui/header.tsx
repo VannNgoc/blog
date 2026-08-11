@@ -27,7 +27,25 @@ async function HeaderNav() {
 
 export default function Header() {
   return (
-    <div className="flex items-center justify-between p-4 bg-zinc-800 text-zinc-50">
+    // Named so view transitions can hold it still while the page content
+    // slides beneath it (see the site-header rules in globals.css).
+    //
+    // `relative z-60` is load-bearing, not decoration. A `view-transition-name`
+    // makes the element a stacking context, which traps the mobile nav
+    // dropdown's own z-index inside the header — and a static, z-auto header
+    // paints in DOM order, i.e. underneath everything in <main>. Positioning
+    // the header and lifting it above page content puts the dropdown back on
+    // top.
+    //
+    // The site's layering, since almost everything used to sit at 50:
+    //   content auto–10  <  editor toolbar + its popovers 50  <  header 60
+    //   <  modal overlays 70
+    // 60 clears the Tiptap toolbar (sticky, z-50) that was covering the top of
+    // the dropdown on the edit page; the overlays moved to 70 to stay above it.
+    <div
+      className="relative z-60 flex items-center justify-between p-4 bg-zinc-800 text-zinc-50"
+      style={{ viewTransitionName: "site-header" }}
+    >
       <Link
         href="/"
         className="text-2xl font-medium tracking-wider text-zinc-50 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300"

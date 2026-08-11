@@ -38,13 +38,13 @@ export function DeletePostConfirmButton({ id }: { id: number }) {
       {/* Minimal modal */}
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          className="fixed inset-0 z-70 flex items-center justify-center bg-black/40 p-4"
           role="dialog"
           aria-modal="true"
         >
           <div className="w-full max-w-sm rounded-xl bg-white p-4 text-zinc-900 shadow dark:bg-zinc-900 dark:text-zinc-50">
-            <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Delete post?</h3>
-            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+            <h3 className="text-base font-semibold text-foreground">Delete post?</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
               This action can’t be undone.
             </p>
 

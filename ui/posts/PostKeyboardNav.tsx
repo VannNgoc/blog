@@ -36,8 +36,15 @@ type PostKeyboardNavProps = {
 export function PostKeyboardNav({ nextHref, previousHref }: PostKeyboardNavProps) {
   const router = useRouter();
 
-  useHotkeys("right", () => router.push(nextHref!), { enabled: Boolean(nextHref) });
-  useHotkeys("left", () => router.push(previousHref!), { enabled: Boolean(previousHref) });
+  // Same transitionTypes the visible Prev/Next links carry, so a key press and
+  // a click animate identically — the direction of travel reads the same either
+  // way the reader moves.
+  useHotkeys("right", () => router.push(nextHref!, { transitionTypes: ["nav-forward"] }), {
+    enabled: Boolean(nextHref),
+  });
+  useHotkeys("left", () => router.push(previousHref!, { transitionTypes: ["nav-back"] }), {
+    enabled: Boolean(previousHref),
+  });
 
   return null;
 }

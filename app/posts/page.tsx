@@ -6,6 +6,7 @@ import {PostsNavBar} from "@/ui/posts/PostsNavBar";
 import { Search } from "@/ui/posts/Search";
 import { auth } from '@/lib/auth/server';
 import { BlurFade } from "@/components/magicui/blur-fade";
+import { NavTransition } from "@/ui/NavTransition";
 
 export const dynamic = 'force-dynamic';
 
@@ -26,14 +27,15 @@ export default async function PostsPage({ searchParams }: { searchParams: Promis
   ]);
 
   return (
+    <NavTransition>
     <main className="container mx-auto p-4">
       <div className="my-4 flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">Shared Posts</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Shared Posts</h1>
         {session?.user && <CreatePostButton/>}
       </div>
       <Search/>
       {posts.length === 0 ? (
-        <p className="mt-6 text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="mt-6 text-sm text-muted-foreground">
           {q ? `No posts match "${q}".` : "No posts yet."}
         </p>
       ) : (
@@ -47,5 +49,6 @@ export default async function PostsPage({ searchParams }: { searchParams: Promis
       )}
       <PostsNavBar numberPosts={postCount}/>
     </main>
+    </NavTransition>
   );
 }

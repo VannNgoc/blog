@@ -25,17 +25,17 @@ export function PostCard({ post, isAuthor, showAccessBadge = false }: PostCardPr
 
   return (
     <li className={`relative rounded-lg border p-4 transition-all hover:border-l-zinc-800 hover:bg-zinc-50 dark:hover:border-l-zinc-400 dark:hover:bg-zinc-900 group ${isDraft ? "border-dashed border-zinc-300 border-l-4 border-l-zinc-300 dark:border-zinc-600 dark:border-l-zinc-600" : "border-zinc-200 border-l-4 border-l-zinc-200 dark:border-zinc-700 dark:border-l-zinc-700"}`}>
-      <Link href={href} className="block">
+      <Link href={href} transitionTypes={["nav-forward"]} className="block">
         <div className="flex justify-between items-start mb-2">
-          <h2 className="text-lg font-medium text-zinc-900 dark:text-zinc-50">{post.post_name}</h2>
+          <h2 className="text-lg font-medium text-foreground">{post.post_name}</h2>
         </div>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">Author: {post.username}</p>
+        <p className="text-sm text-muted-foreground">Author: {post.username}</p>
 
-        <p className="my-3 text-sm line-clamp-3 text-zinc-800 dark:text-zinc-200">
+        <p className="my-3 text-sm line-clamp-3 text-muted-foreground">
           {preview}
         </p>
 
-        <p className="flex items-center justify-between text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="flex items-center justify-between text-sm text-muted-foreground">
           <span>{new Date(post.post_date).toLocaleDateString()}</span>
           {showAccessBadge && (
             isPrivate ? (

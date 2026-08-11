@@ -35,7 +35,9 @@ describe("PostKeyboardNav", () => {
 
     pressKey("ArrowRight");
 
-    expect(push).toHaveBeenCalledWith("/posts/2");
+    // Moving to a newer post is "forward", and must carry the same view
+    // transition type the visible Next link uses so both animate identically.
+    expect(push).toHaveBeenCalledWith("/posts/2", { transitionTypes: ["nav-forward"] });
   });
 
   it("navigates to the previous post on ArrowLeft", () => {
@@ -43,7 +45,7 @@ describe("PostKeyboardNav", () => {
 
     pressKey("ArrowLeft");
 
-    expect(push).toHaveBeenCalledWith("/posts/1");
+    expect(push).toHaveBeenCalledWith("/posts/1", { transitionTypes: ["nav-back"] });
   });
 
   it("does nothing on ArrowRight when there is no next post", () => {
