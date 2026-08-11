@@ -3,6 +3,15 @@ import {useEffect, useRef, useState} from 'react';
 import Link from 'next/link';
 import SignOutButton from './SignOutButton';
 
+/* The dropdown is the only navigation on phones and tablets, so its rows are
+   sized for fingers: 44px tall (Apple's HIG minimum — WCAG 2.2's 24px floor is
+   the bare minimum, not a target) and full-panel width, so the whole strip is
+   tappable instead of just the glyphs. Padding does the work, not a larger
+   font, so the menu keeps its proportions. A hover/active fill replaces the
+   underline, since underline is a mouse affordance that touch never sees. */
+const mobileItemClass =
+    "flex min-h-11 w-full items-center whitespace-nowrap rounded-md px-3 py-2 text-zinc-100 transition-colors hover:bg-zinc-700 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300";
+
 export function NavigationMenu({ isSignedIn }: { isSignedIn: boolean }){
     const [isOpen, setIsOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -32,7 +41,10 @@ export function NavigationMenu({ isSignedIn }: { isSignedIn: boolean }){
             </nav>
             {/* //mobile menu */}
             <button
-                className="md:hidden rounded-md p-1.5 text-zinc-100 transition hover:bg-zinc-700 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300"
+                /* `after:-inset-1.5` is an invisible 44px touch target over this
+                   32px button — see the same treatment on ThemeToggle. It keeps
+                   the header's height unchanged on phones. */
+                className="relative md:hidden rounded-md p-1.5 text-zinc-100 transition after:absolute after:-inset-1.5 after:content-[''] hover:bg-zinc-700 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300"
                 onClick={handleClick}
                 aria-label={isOpen ? "Close menu" : "Open menu"}
             >
@@ -44,11 +56,34 @@ export function NavigationMenu({ isSignedIn }: { isSignedIn: boolean }){
             </button>
             {/* //mobile menu content */}
             {isOpen && (
-                <div className='navigation-menu-content flex flex-col gap-2 absolute top-10 right-0 p-4 bg-zinc-800 text-zinc-50 rounded-lg z-10'>
-                    {isSignedIn ? <Link href="/dashboard" className='text-zinc-100 hover:text-white hover:underline'>Dashboard</Link> : null}
-                    {isSignedIn ? <Link href="/drafts" className='text-zinc-100 hover:text-white hover:underline'>Drafts</Link> : null}
-                    <Link href="/posts" className='text-zinc-100 hover:text-white hover:underline'>Shared Posts</Link>
-                    {isSignedIn ? <SignOutButton /> : <Link href="/auth/sign-in" className='text-zinc-100 hover:text-white hover:underline'>Login</Link>}
+                /* Close on any activated item. This component isn't remounted
+                   by a client-side navigation, so `isOpen` would otherwise
+                   survive the route change and leave the panel sitting over the
+                   new page. Delegating to the panel (rather than an onClick per
+                   item) also covers Sign Out, and closes even when the tapped
+                   link is the route we're already on — which a pathname-watching
+                   effect would miss, since the pathname never changes. */
+                <div
+                    /* `top-full` anchors the panel to the header's bottom edge
+                       rather than a fixed 40px, which used to land inside the
+                       header and cover the theme toggle and the site name; it
+                       tracks the header's real height, so it stays correct if
+                       that height ever changes. `-mt-1` then tucks it 4px under
+                       that edge for a tighter join — the header controls and
+                       their 44px touch targets all end ~10px above the seam, so
+                       nothing is covered. Only the bottom corners are rounded —
+                       square tops let the panel read as continuous with the
+                       header it hangs from. The shadow separates it from the
+                       page content it hangs over. */
+                    className='navigation-menu-content flex flex-col gap-1 absolute top-full right-0 -mt-1 p-2 bg-zinc-800 text-zinc-50 rounded-b-lg shadow-lg z-10'
+                    onClick={(e) => {
+                        if ((e.target as HTMLElement).closest('a, button')) setIsOpen(false);
+                    }}
+                >
+                    {isSignedIn ? <Link href="/dashboard" className={mobileItemClass}>Dashboard</Link> : null}
+                    {isSignedIn ? <Link href="/drafts" className={mobileItemClass}>Drafts</Link> : null}
+                    <Link href="/posts" className={mobileItemClass}>Shared Posts</Link>
+                    {isSignedIn ? <SignOutButton className={mobileItemClass} /> : <Link href="/auth/sign-in" className={mobileItemClass}>Login</Link>}
                 </div>
             )}
         </div>

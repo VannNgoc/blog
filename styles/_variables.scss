@@ -161,10 +161,25 @@
   --tt-destructive-contrast: 8%;
   --tt-foreground-contrast: 8%;
 
-  &,
-  *,
-  ::before,
-  ::after {
+}
+
+/*
+ * This universal reset comes from the Tiptap template. Its purpose is to hand
+ * every element a default transition duration/easing so individual components
+ * only have to name a `transition-property` — but the `transition` shorthand
+ * also resets `transition-property` to `none`.
+ *
+ * Left unlayered it applied to `:root *` and, since unlayered rules beat
+ * layered ones no matter the specificity, it silently overrode every Tailwind
+ * `transition-*` utility on the site. Moving it into `@layer base` keeps the
+ * default (elements that never ask for a transition still get `none`) while
+ * letting the utilities in `@layer utilities` win when they do ask.
+ */
+@layer base {
+  :root,
+  :root *,
+  :root ::before,
+  :root ::after {
     box-sizing: border-box;
     transition: none var(--tt-transition-duration-default)
       var(--tt-transition-easing-default);

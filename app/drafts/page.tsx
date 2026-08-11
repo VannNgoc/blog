@@ -13,7 +13,7 @@ async function DraftsList({ userId, page }: { userId: string; page: number }) {
 
   if (drafts.length === 0) {
     return (
-      <p className="mt-6 text-sm text-zinc-600 dark:text-zinc-400">
+      <p className="mt-6 text-sm text-muted-foreground">
         You haven&apos;t started any drafts yet.
       </p>
     );
@@ -39,7 +39,7 @@ export default async function Drafts({ searchParams }: { searchParams: Promise<{
   return (
     <main className="container mx-auto p-4">
       <div className="my-4 flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">Drafts</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Drafts</h1>
         <CreatePostButton/>
       </div>
       <Suspense key={page} fallback={<PostListSkeleton />}>

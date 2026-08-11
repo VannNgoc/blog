@@ -491,13 +491,13 @@ export function SimpleEditor({
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Post title"
             aria-label="Post title"
-            className="w-full flex-1 rounded-md border border-zinc-300 bg-white p-2 text-lg font-medium text-zinc-900 placeholder:text-zinc-500 focus:border-blue-600 focus:outline-none dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50 dark:placeholder:text-zinc-400 dark:focus:border-blue-500"
+            className="w-full flex-1 rounded-md border border-zinc-300 bg-white p-2 text-lg font-medium text-foreground placeholder:text-(--faint-foreground) focus:border-blue-600 focus:outline-none dark:border-zinc-600 dark:bg-zinc-950 dark:focus:border-blue-500"
           />
           <select
             value={access}
             onChange={(e) => setAccess(Number(e.target.value))}
             aria-label="Access level"
-            className="rounded-md border border-zinc-300 bg-white p-2 text-zinc-900 focus:border-blue-600 focus:outline-none dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-blue-500"
+            className="rounded-md border border-zinc-300 bg-white p-2 text-foreground focus:border-blue-600 focus:outline-none dark:border-zinc-600 dark:bg-zinc-950 dark:focus:border-blue-500"
           >
             <option value={ACCESS_DRAFT}>Draft</option>
             <option value={1}>Public</option>
@@ -513,7 +513,7 @@ export function SimpleEditor({
             aria-label="Post description"
             maxLength={300}
             rows={2}
-            className="w-full resize-none rounded-md border border-zinc-300 bg-white p-2 text-sm text-zinc-900 placeholder:text-zinc-500 focus:border-blue-600 focus:outline-none dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50 dark:placeholder:text-zinc-400 dark:focus:border-blue-500"
+            className="w-full resize-none rounded-md border border-zinc-300 bg-white p-2 text-sm text-foreground placeholder:text-(--faint-foreground) focus:border-blue-600 focus:outline-none dark:border-zinc-600 dark:bg-zinc-950 dark:focus:border-blue-500"
           />
         </div>
 

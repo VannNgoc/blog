@@ -11,18 +11,33 @@
  */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+ * Text colours are tuned for sustained reading, not for maximum contrast.
+ * Both modes previously sat near 18:1 — near-black on pure white, near-white
+ * on near-black — which is the classic eye-fatigue case: it overstimulates in
+ * light mode, and in dark mode causes halation, where bright glyphs appear to
+ * bleed into the background (worst for readers with astigmatism). Primary text
+ * now lands at ~14:1 in both modes and secondary at ~7.6:1, so everything
+ * still clears WCAG AAA for body text (7:1) while stepping back from the
+ * extremes. Neutral greys throughout — no blue cast.
+ */
 :root {
   color-scheme: light;
   --background: #ffffff;
-  --foreground: #171717;
-  /* Secondary text: ~7:1 on white (WCAG AAA for body) */
+  /* ~14.2:1 on white — primary reading text */
+  --foreground: #2b2b2b;
+  /* ~7.7:1 on white (WCAG AAA for body) */
   --muted-foreground: #525252;
+  /* ~4.9:1 — de-emphasised labels and icons only, never body copy */
+  --faint-foreground: #6e6e6e;
   --border-subtle: #e4e4e7;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-faint-foreground: var(--faint-foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -30,9 +45,13 @@
 .dark {
   color-scheme: dark;
   --background: #0a0a0a;
-  --foreground: #f4f4f5;
-  /* ~6.5:1 on #0a0a0a — comfortable secondary text */
-  --muted-foreground: #a1a1aa;
+  /* ~14:1 on the rendered dark surface, matching light mode's primary so
+     neither theme reads as harsher than the other */
+  --foreground: #dcdcdc;
+  /* ~7.6:1 — comfortable secondary text */
+  --muted-foreground: #a3a3a3;
+  /* ~4.8:1 — de-emphasised labels and icons only */
+  --faint-foreground: #7d7d7d;
   --border-subtle: #3f3f46;
 }
 
@@ -55,4 +74,91 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/*
+ * View transitions for post-to-post navigation.
+ *
+ * Direction follows the reading order already encoded in the UI: moving to a
+ * newer post (the → link, ArrowRight) slides content left like turning a page
+ * forward; moving to an older post slides it back the other way.
+ *
+ * Timing is asymmetric on purpose — the outgoing page leaves quickly so it
+ * stops competing for attention, and the incoming page arrives more gently,
+ * with its fade delayed until the exit finishes.
+ */
+@keyframes vt-fade {
+  from {
+    opacity: 0;
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@keyframes vt-slide {
+  from {
+    translate: var(--vt-offset);
+  }
+  to {
+    translate: 0;
+  }
+}
+
+::view-transition-old(.nav-forward) {
+  --vt-offset: -60px;
+  animation:
+    150ms ease-in both vt-fade reverse,
+    400ms ease-in-out both vt-slide reverse;
+}
+::view-transition-new(.nav-forward) {
+  --vt-offset: 60px;
+  animation:
+    210ms ease-out 150ms both vt-fade,
+    400ms ease-in-out both vt-slide;
+}
+
+::view-transition-old(.nav-back) {
+  --vt-offset: 60px;
+  animation:
+    150ms ease-in both vt-fade reverse,
+    400ms ease-in-out both vt-slide reverse;
+}
+::view-transition-new(.nav-back) {
+  --vt-offset: -60px;
+  animation:
+    210ms ease-out 150ms both vt-fade,
+    400ms ease-in-out both vt-slide;
+}
+
+/* The header is the reader's spatial anchor: it must stay put so the motion
+   reads as "the content moved", not "the whole viewport moved". */
+::view-transition-group(site-header) {
+  animation: none;
+  z-index: 100;
+}
+::view-transition-old(site-header) {
+  display: none;
+}
+::view-transition-new(site-header) {
+  animation: none;
+}
+
+/* The transition overlay otherwise swallows clicks for its whole duration. */
+::view-transition {
+  pointer-events: none;
+}
+
+/* Directional slides simulate movement across the viewport, which is the most
+   common trigger for motion sensitivity. Honour the OS setting and let content
+   swap instantly instead. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
 }
