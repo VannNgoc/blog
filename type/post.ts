@@ -9,6 +9,7 @@ export type PostRow = {
   post_edit_date: Date | null;
   post_body_json: JSONContent;
   post_description: string | null;
+  /** FK onto ACCESS_TYPES: 1 = public, 2 = private, 3 = followers, 4 = draft. */
   access: number;
 };
 

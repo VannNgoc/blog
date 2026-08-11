@@ -5,6 +5,7 @@ import { PostKeyboardNav } from "@/ui/posts/PostKeyboardNav";
 import Link from "next/link";
 import { auth } from '@/lib/auth/server'
 import { withPostImageUrls } from '@/lib/tiptap-utils'
+import { ACCESS_DRAFT } from '@/lib/constants'
 
 export default async function Page({
   params,
@@ -24,6 +25,10 @@ export default async function Page({
   ]);
   const userID = session?.user.id || '';
   if (!post) notFound();
+  // A draft has no reader-facing page at all — not even for its author. It only
+  // becomes a post once it's saved as public or private; until then the editor
+  // (/posts/[id]/edit) is the only way in.
+  if (post.access === ACCESS_DRAFT) notFound();
   if (post.access !== 1 && post.post_author !== userID) notFound();
   const { newer, older } = await getAdjacentPosts({ id: post.id, post_date: post.post_date, user_id: userID });
 

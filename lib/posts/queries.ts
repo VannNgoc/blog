@@ -2,7 +2,7 @@ import "server-only";
 import { sql } from "@/lib/db";
 import type { PostRow, PostWithAuthorRow } from "@/type/post";
 
-import { PAGINATION_LIMIT } from '@/lib/constants'
+import { ACCESS_DRAFT, PAGINATION_LIMIT } from '@/lib/constants'
 
 export async function getPostsCount({ isPublic }: { isPublic: boolean }){
   const [{ count }] = isPublic
@@ -33,7 +33,7 @@ export async function getPosts(userID: string | undefined, currentPage: number) 
 }
 
 export async function getUserPostsCount(userID: string) {
-  const [{ count }] = await sql`SELECT COUNT(*) FROM "POSTS" WHERE access = 1 OR post_author = ${userID}`;
+  const [{ count }] = await sql`SELECT COUNT(*) FROM "POSTS" WHERE access = 1 OR (post_author = ${userID} AND access != ${ACCESS_DRAFT})`;
   return count;
 }
 
@@ -51,7 +51,33 @@ export async function getUserPosts(userID: string, currentPage: number) {
       u.username
     FROM "POSTS" AS p
     INNER JOIN "USERS" AS u ON p.post_author = u.id
-    WHERE p.access = 1 OR p.post_author = ${userID}
+    WHERE p.access = 1 OR (p.post_author = ${userID} AND p.access != ${ACCESS_DRAFT})
+    ORDER BY post_date DESC, id DESC
+    LIMIT ${PAGINATION_LIMIT} OFFSET ${(currentPage - 1) * PAGINATION_LIMIT}
+  `) as PostWithAuthorRow[];
+  return posts;
+}
+
+export async function getUserDraftsCount(userID: string) {
+  const [{ count }] = await sql`SELECT COUNT(*) FROM "POSTS" WHERE access = ${ACCESS_DRAFT} AND post_author = ${userID}`;
+  return count;
+}
+
+export async function getUserDrafts(userID: string, currentPage: number) {
+  const posts = (await sql`
+    SELECT
+      p.id,
+      p.post_name,
+      p.post_author,
+      p.post_date,
+      p.post_edit_date,
+      p.post_body_json,
+      p.post_description,
+      p.access,
+      u.username
+    FROM "POSTS" AS p
+    INNER JOIN "USERS" AS u ON p.post_author = u.id
+    WHERE p.access = ${ACCESS_DRAFT} AND p.post_author = ${userID}
     ORDER BY post_date DESC, id DESC
     LIMIT ${PAGINATION_LIMIT} OFFSET ${(currentPage - 1) * PAGINATION_LIMIT}
   `) as PostWithAuthorRow[];
@@ -85,7 +111,7 @@ export async function getAllPostBodies() {
 
 export async function getAdjacentPosts(input: { id: number; post_date: Date; user_id?: string }) {
   const accessFilter = input.user_id
-    ? sql`(access = 1 OR post_author = ${input.user_id})`
+    ? sql`(access = 1 OR (post_author = ${input.user_id} AND access != ${ACCESS_DRAFT}))`
     : sql`access = 1`;
 
   const [newer, older] = (await Promise.all([
@@ -121,7 +147,7 @@ export async function getAdjacentPosts(input: { id: number; post_date: Date; use
 
 export async function getSearchedPosts(searchString: string, userID: string | undefined, currentPage: number) {
   const accessFilter = userID
-    ? sql`(p.access = 1 OR p.post_author = ${userID})`
+    ? sql`(p.access = 1 OR (p.post_author = ${userID} AND p.access != ${ACCESS_DRAFT}))`
     : sql`p.access = 1`;
 
   const posts = (await sql`
@@ -147,7 +173,7 @@ export async function getSearchedPosts(searchString: string, userID: string | un
 
 export async function getSearchedPostsCount(searchString: string, userID?: string) {
   const accessFilter = userID
-    ? sql`(p.access = 1 OR p.post_author = ${userID})`
+    ? sql`(p.access = 1 OR (p.post_author = ${userID} AND p.access != ${ACCESS_DRAFT}))`
     : sql`p.access = 1`;
 
   const [{ count }] = await sql`

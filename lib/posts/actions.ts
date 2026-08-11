@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { postMetaSchema } from "@/schemas/post-form";
 import type { EditPostInput, NewPostInput, PostRow } from "@/type/post";
 import { auth } from '@/lib/auth/server';
+import { ACCESS_DRAFT } from '@/lib/constants';
 import { getPostById } from '@/lib/posts/queries';
 import { extractImagePathnames } from '@/lib/tiptap-utils';
 import type { JSONContent } from "@tiptap/core";
@@ -51,6 +52,11 @@ export async function deletePostById(id: number): Promise<PostRow | null> {
   return result[0] ?? null;
 }
 
+/** Accept only same-site absolute paths, so a caller can't turn a save into an open redirect. */
+function safeRedirect(target: string | undefined, fallback: string) {
+  return target && target.startsWith("/") && !target.startsWith("//") ? target : fallback;
+}
+
 // Server action handlers that orchestrate mutations
 export async function createPostHandler(input: {
   // Tiptap document, serialized with JSON.stringify on the client. It must cross
@@ -61,6 +67,8 @@ export async function createPostHandler(input: {
   title: string;
   description: string;
   access: number;
+  /** Where to land after saving. Defaults to the list the post now belongs to. */
+  redirectTo?: string;
 }) {
   const body = JSON.parse(input.json) as JSONContent;
 
@@ -84,7 +92,8 @@ export async function createPostHandler(input: {
   };
   await createPost(postData);
   revalidatePath("/posts");
-  redirect("/posts");
+  revalidatePath("/drafts");
+  redirect(safeRedirect(input.redirectTo, access_type === ACCESS_DRAFT ? "/drafts" : "/posts"));
 }
 
 export async function editPostHandler(input: {
@@ -95,6 +104,8 @@ export async function editPostHandler(input: {
   title: string;
   description: string;
   access: number;
+  /** Where to land after saving. Defaults to the post's own page. */
+  redirectTo?: string;
 }) {
   const body = JSON.parse(input.json) as JSONContent;
 
@@ -127,6 +138,7 @@ export async function editPostHandler(input: {
 
   await editPost(postData);
   revalidatePath("/posts");
+  revalidatePath("/drafts");
   revalidatePath(`/posts/${input.id}`);
 
   if (droppedPathnames.length > 0) {
@@ -137,7 +149,9 @@ export async function editPostHandler(input: {
     });
   }
 
-  redirect(`/posts/${input.id}`);
+  // A post that's still a draft has no view page to land on, so fall back to
+  // the drafts list instead of a route that would 404.
+  redirect(safeRedirect(input.redirectTo, access_type === ACCESS_DRAFT ? "/drafts" : `/posts/${input.id}`));
 }
 
 export async function deletePostAction(formData: FormData) {

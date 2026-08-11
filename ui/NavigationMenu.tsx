@@ -26,6 +26,7 @@ export function NavigationMenu({ isSignedIn }: { isSignedIn: boolean }){
             {/* //desktop/tablet menu */}
             <nav className="text-zinc-100 hidden md:flex md:items-center md:gap-4">
                 {isSignedIn ? <Link href="/dashboard" className="underline-offset-4 hover:underline hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300">Dashboard</Link> : null}
+                {isSignedIn ? <Link href="/drafts" className="underline-offset-4 hover:underline hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300">Drafts</Link> : null}
                 <Link href="/posts" className="underline-offset-4 hover:underline hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300">Shared Posts</Link>
                 {isSignedIn ? <SignOutButton /> : <Link href="/auth/sign-in" className="underline-offset-4 hover:underline hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300">Login</Link>}
             </nav>
@@ -45,6 +46,7 @@ export function NavigationMenu({ isSignedIn }: { isSignedIn: boolean }){
             {isOpen && (
                 <div className='navigation-menu-content flex flex-col gap-2 absolute top-10 right-0 p-4 bg-zinc-800 text-zinc-50 rounded-lg z-10'>
                     {isSignedIn ? <Link href="/dashboard" className='text-zinc-100 hover:text-white hover:underline'>Dashboard</Link> : null}
+                    {isSignedIn ? <Link href="/drafts" className='text-zinc-100 hover:text-white hover:underline'>Drafts</Link> : null}
                     <Link href="/posts" className='text-zinc-100 hover:text-white hover:underline'>Shared Posts</Link>
                     {isSignedIn ? <SignOutButton /> : <Link href="/auth/sign-in" className='text-zinc-100 hover:text-white hover:underline'>Login</Link>}
                 </div>
