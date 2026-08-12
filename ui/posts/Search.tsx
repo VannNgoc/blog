@@ -31,6 +31,9 @@ export function Search() {
 
     return (
         <div className="relative w-full sm:max-w-md">
+            <label htmlFor="post-search" className="sr-only">
+                Search posts
+            </label>
             {/* Magnifier icon: muted token color, sits inside the input on the left.
                 pointer-events-none so clicks fall through to the input. */}
             <svg
@@ -49,6 +52,7 @@ export function Search() {
             </svg>
             <input
                 ref={inputRef}
+                id="post-search"
                 placeholder="Search posts..."
                 type="text"
                 value={searchValue}

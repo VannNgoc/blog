@@ -44,7 +44,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       : 0;
 
   return (
-    <main className="container mx-auto p-4">
+    <main id="main-content" className="container mx-auto p-4">
       <div className="my-4 flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-foreground">Posts</h1>
         {session?.user && <CreatePostButton/>}

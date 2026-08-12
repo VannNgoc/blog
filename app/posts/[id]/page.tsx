@@ -72,7 +72,7 @@ export default async function Page({
 
   return (
   <NavTransition>
-  <main className="mx-auto w-full max-w-prose p-4 pb-24 text-foreground md:pb-4">
+  <main id="main-content" className="mx-auto w-full max-w-prose p-4 pb-24 text-foreground md:pb-4">
     <PostKeyboardNav
       key={`keyboard-nav-${post.id}`}
       nextHref={newer ? `/posts/${newer.id}` : undefined}
@@ -117,15 +117,17 @@ export default async function Page({
       {/* Desktop: simple inline links */}
       <div className="hidden sm:flex sm:items-center sm:justify-between">
         {older ? (
-          <Link className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline" href={`/posts/${older.id}`} transitionTypes={['nav-back']}>
+          <Link className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline" href={`/posts/${older.id}`} transitionTypes={['nav-back']} aria-keyshortcuts="ArrowLeft">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 shrink-0">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
             </svg>
             <span>{older.post_name}</span>
+            <kbd className="rounded border border-zinc-300 px-1 text-[10px] text-faint-foreground dark:border-zinc-600" aria-hidden="true">←</kbd>
           </Link>
         ) : <span />}
         {newer ? (
-          <Link className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline" href={`/posts/${newer.id}`} transitionTypes={['nav-forward']}>
+          <Link className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline" href={`/posts/${newer.id}`} transitionTypes={['nav-forward']} aria-keyshortcuts="ArrowRight">
+            <kbd className="rounded border border-zinc-300 px-1 text-[10px] text-faint-foreground dark:border-zinc-600" aria-hidden="true">→</kbd>
             <span>{newer.post_name}</span>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 shrink-0">
               <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />

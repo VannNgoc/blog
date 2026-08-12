@@ -10,7 +10,7 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
   }, [error])
  
   return (
-    <main className="container mx-auto p-4">
+    <main id="main-content" className="container mx-auto p-4">
       <h1 className="mb-6 text-2xl font-semibold text-foreground">Something went wrong</h1>
       <p className="text-muted-foreground mb-4">An unexpected error occurred.</p>
       <div className="flex gap-4">

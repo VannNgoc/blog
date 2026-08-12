@@ -37,7 +37,7 @@ export default async function Drafts({ searchParams }: { searchParams: Promise<{
   const draftsCount = await getUserDraftsCount(session.user.id);
 
   return (
-    <main className="container mx-auto p-4">
+    <main id="main-content" className="container mx-auto p-4">
       <div className="my-4 flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-foreground">Drafts</h1>
         <CreatePostButton/>

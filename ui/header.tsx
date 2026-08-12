@@ -42,7 +42,7 @@ export default function Header() {
     //   <  modal overlays 70
     // 60 clears the Tiptap toolbar (sticky, z-50) that was covering the top of
     // the dropdown on the edit page; the overlays moved to 70 to stay above it.
-    <div
+    <header
       className="relative z-60 flex items-center justify-between p-4 bg-zinc-800 text-zinc-50"
       style={{ viewTransitionName: "site-header" }}
     >
@@ -64,6 +64,6 @@ export default function Header() {
           <HeaderNav />
         </Suspense>
       </div>
-    </div>
+    </header>
   );
 }

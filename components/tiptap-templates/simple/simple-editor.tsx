@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { EditorContent, EditorContext, useEditor } from "@tiptap/react"
+import type { Editor } from "@tiptap/react"
 
 // --- Tiptap Core Extensions ---
 import { Image as TiptapImage } from "@tiptap/extension-image"
@@ -32,6 +33,7 @@ import "@/components/tiptap-node/paragraph-node/paragraph-node.scss"
 // --- Tiptap UI ---
 import { HeadingDropdownMenu } from "@/components/tiptap-ui/heading-dropdown-menu"
 import { ImageUploadButton } from "@/components/tiptap-ui/image-upload-button"
+import { ImageAltButton } from "@/components/tiptap-ui/image-alt-button"
 import { ListDropdownMenu } from "@/components/tiptap-ui/list-dropdown-menu"
 import { BlockquoteButton } from "@/components/tiptap-ui/blockquote-button"
 import { CodeBlockButton } from "@/components/tiptap-ui/code-block-button"
@@ -126,12 +128,14 @@ export type SimpleEditorProps = {
 }
 
 const MainToolbarContent = ({
+  editor,
   onHighlighterClick,
   onLinkClick,
   onSave,
   onCancel,
   isMobile,
 }: {
+  editor: Editor | null
   onHighlighterClick: () => void
   onLinkClick: () => void
   onSave: () => void
@@ -195,6 +199,7 @@ const MainToolbarContent = ({
 
       <ToolbarGroup>
         <ImageUploadButton text="Add" />
+        <ImageAltButton editor={editor} />
       </ToolbarGroup>
 
       <Spacer />
@@ -470,6 +475,7 @@ export function SimpleEditor({
         >
           {currentView === "main" ? (
             <MainToolbarContent
+              editor={editor}
               onHighlighterClick={() => setMobileView("highlighter")}
               onLinkClick={() => setMobileView("link")}
               onSave={handleSave}
