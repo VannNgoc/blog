@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { getAdjacentPosts, getPostById } from "@/lib/posts/queries";
 import { PostContent } from "@/components/tiptap-templates/simple/post-content";
@@ -5,8 +7,43 @@ import { PostKeyboardNav } from "@/ui/posts/PostKeyboardNav";
 import Link from "next/link";
 import { auth } from '@/lib/auth/server'
 import { withPostImageUrls } from '@/lib/tiptap-utils'
-import { ACCESS_DRAFT } from '@/lib/constants'
+import { ACCESS_DRAFT, ACCESS_PUBLIC } from '@/lib/constants'
 import { NavTransition } from '@/ui/NavTransition'
+
+// De-duped per request (React's cache()) so generateMetadata and the page
+// body share one DB round trip instead of each fetching the post separately.
+const getCachedPost = cache((postId: number) => getPostById(postId));
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const postId = Number(id);
+  if (Number.isNaN(postId)) return {};
+
+  const [{ data: session }, post] = await Promise.all([
+    auth.getSession(),
+    getCachedPost(postId),
+  ]);
+  // Mirror the page's own access checks — a draft or a private post someone
+  // else authored must not leak its title/description into <head>.
+  if (!post || post.access === ACCESS_DRAFT) return {};
+  if (post.access !== ACCESS_PUBLIC && post.post_author !== (session?.user.id ?? '')) return {};
+
+  const description = post.post_description || undefined;
+  return {
+    title: post.post_name,
+    description,
+    openGraph: {
+      title: post.post_name,
+      description,
+      type: "article",
+      publishedTime: new Date(post.post_date).toISOString(),
+    },
+  };
+}
 
 export default async function Page({
   params,
@@ -22,7 +59,7 @@ export default async function Page({
   // instead of paying two sequential network round trips.
   const [{ data: session }, post] = await Promise.all([
     auth.getSession(),
-    getPostById(postId),
+    getCachedPost(postId),
   ]);
   const userID = session?.user.id || '';
   if (!post) notFound();
