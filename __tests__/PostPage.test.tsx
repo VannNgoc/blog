@@ -35,7 +35,7 @@ jest.mock("next/link", () => {
 
 import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
-import Page from "@/app/posts/[id]/page";
+import Page, { generateMetadata } from "@/app/posts/[id]/page";
 import { getPostById, getAdjacentPosts } from "@/lib/posts/queries";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth/server";
@@ -112,6 +112,89 @@ describe("post detail page access control", () => {
 
   it("returns notFound for a non-numeric id", async () => {
     await expect(renderPage("abc")).rejects.toThrow("NEXT_NOT_FOUND");
+    expect(mockGetPostById).not.toHaveBeenCalled();
+  });
+});
+
+describe("generateMetadata", () => {
+  function metadataFor(id: string) {
+    return generateMetadata({ params: Promise.resolve({ id }) });
+  }
+
+  it("returns title, description, and OG tags for a public post", async () => {
+    mockGetPostById.mockResolvedValue({
+      ...publicPost,
+      id: 101,
+      post_description: "A short teaser.",
+    });
+
+    const metadata = await metadataFor("101");
+
+    expect(metadata.title).toBe("Public Post");
+    expect(metadata.description).toBe("A short teaser.");
+    expect(metadata.openGraph).toMatchObject({
+      title: "Public Post",
+      description: "A short teaser.",
+      type: "article",
+    });
+  });
+
+  it("omits description when the post has none", async () => {
+    mockGetPostById.mockResolvedValue({ ...publicPost, id: 102, post_description: null });
+
+    const metadata = await metadataFor("102");
+
+    expect(metadata.title).toBe("Public Post");
+    expect(metadata.description).toBeUndefined();
+  });
+
+  it("does not leak a draft post's title into metadata", async () => {
+    mockGetPostById.mockResolvedValue({ ...privatePost, id: 103, access: 4 });
+
+    const metadata = await metadataFor("103");
+
+    expect(metadata).toEqual({});
+  });
+
+  it("does not leak a private post's title to an anonymous visitor", async () => {
+    mockGetPostById.mockResolvedValue({ ...privatePost, id: 104 });
+    mockGetSession.mockResolvedValue({ data: null });
+
+    const metadata = await metadataFor("104");
+
+    expect(metadata).toEqual({});
+  });
+
+  it("does not leak a private post's title to a different signed-in user", async () => {
+    mockGetPostById.mockResolvedValue({ ...privatePost, id: 105 });
+    mockGetSession.mockResolvedValue({ data: { user: { id: "other-user" } } });
+
+    const metadata = await metadataFor("105");
+
+    expect(metadata).toEqual({});
+  });
+
+  it("returns the real title for a private post viewed by its author", async () => {
+    mockGetPostById.mockResolvedValue({ ...privatePost, id: 106 });
+    mockGetSession.mockResolvedValue({ data: { user: { id: "author-1" } } });
+
+    const metadata = await metadataFor("106");
+
+    expect(metadata.title).toBe("Private Reflection");
+  });
+
+  it("returns empty metadata when the post does not exist", async () => {
+    mockGetPostById.mockResolvedValue(undefined);
+
+    const metadata = await metadataFor("999");
+
+    expect(metadata).toEqual({});
+  });
+
+  it("returns empty metadata for a non-numeric id without querying the database", async () => {
+    const metadata = await metadataFor("abc");
+
+    expect(metadata).toEqual({});
     expect(mockGetPostById).not.toHaveBeenCalled();
   });
 });
