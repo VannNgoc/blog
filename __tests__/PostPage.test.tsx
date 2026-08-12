@@ -60,7 +60,7 @@ const publicPost = { ...privatePost, access: 1, post_name: "Public Post" };
 
 function renderPage(id: string) {
   // Server component: invoke it directly, then render the returned JSX
-  return Page({ params: { id } });
+  return Page({ params: Promise.resolve({ id }) });
 }
 
 beforeEach(() => {

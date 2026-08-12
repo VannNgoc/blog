@@ -11,7 +11,7 @@ import { NavTransition } from '@/ui/NavTransition'
 export default async function Page({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   // "1" when user visits /posts/1
   const { id } = await params;

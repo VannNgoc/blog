@@ -13,6 +13,7 @@ import { NodeViewWrapper } from "@tiptap/react"
 export const ImageNode: React.FC<NodeViewProps> = ({ node }) => {
   const { src, alt, title, imgWidth, imgHeight, loading } = node.attrs
   const [loaded, setLoaded] = useState(false)
+  const [errored, setErrored] = useState(false)
 
   // Reserves the exact space the image will occupy so the skeleton matches
   // its final size and nothing shifts on load. Older posts saved before
@@ -24,6 +25,16 @@ export const ImageNode: React.FC<NodeViewProps> = ({ node }) => {
   // other image) only delays the metric it's being measured by.
   const isEager = loading === "eager"
 
+  if (errored) {
+    return (
+      <NodeViewWrapper className="tiptap-image-node" data-loaded style={style}>
+        <div className="tiptap-image-node-error" role="img" aria-label={alt || "Image failed to load"}>
+          <span>Image failed to load{alt ? `: ${alt}` : ""}</span>
+        </div>
+      </NodeViewWrapper>
+    )
+  }
+
   return (
     <NodeViewWrapper className="tiptap-image-node" data-loaded={loaded} style={style}>
       {!loaded && <div className="skeleton tiptap-image-node-skeleton" aria-hidden="true" />}
@@ -34,7 +45,7 @@ export const ImageNode: React.FC<NodeViewProps> = ({ node }) => {
         loading={isEager ? "eager" : "lazy"}
         fetchPriority={isEager ? "high" : undefined}
         onLoad={() => setLoaded(true)}
-        onError={() => setLoaded(true)}
+        onError={() => setErrored(true)}
         className={loaded ? undefined : "tiptap-image-node-hidden"}
       />
     </NodeViewWrapper>
