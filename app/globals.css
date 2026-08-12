@@ -204,6 +204,29 @@ body {
   pointer-events: none;
 }
 
+/*
+ * Touch devices get no transition at all.
+ *
+ * Cross-fading two full articles is the one thing that reads worst on a phone:
+ * for the middle of the animation both posts are painted at partial opacity and
+ * the text interleaves into noise. Sequencing the fades avoids that in theory,
+ * but iOS Safari kept producing the doubled frame in practice, and a reader
+ * tapping through posts gains nothing from the animation to begin with. An
+ * instant swap is the honest default here.
+ *
+ * `hover: none` rather than a width query: it keys off the input device, so a
+ * narrow desktop window still animates and a tablet does not. `!important`
+ * mirrors the reduced-motion block below — the per-name rules above carry more
+ * specificity than `*` and would otherwise win.
+ */
+@media (hover: none) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation: none !important;
+  }
+}
+
 /* Directional slides simulate movement across the viewport, which is the most
    common trigger for motion sensitivity. Honour the OS setting and let content
    swap instantly instead. */
