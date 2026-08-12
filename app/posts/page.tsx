@@ -28,25 +28,27 @@ export default async function PostsPage({ searchParams }: { searchParams: Promis
 
   return (
     <NavTransition>
-    <main className="container mx-auto p-4">
+    <main id="main-content" className="container mx-auto p-4">
       <div className="my-4 flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-foreground">Shared Posts</h1>
         {session?.user && <CreatePostButton/>}
       </div>
       <Search/>
-      {posts.length === 0 ? (
-        <p className="mt-6 text-sm text-muted-foreground">
-          {q ? `No posts match "${q}".` : "No posts yet."}
-        </p>
-      ) : (
-        <ul className="space-y-4 mt-6">
-          {posts.map((p, i) => (
-            <BlurFade key={p.id} delay={i * 0.07} yOffset={4}>
-              <PostCard post={p} isAuthor={p.post_author === session?.user.id}/>
-            </BlurFade>
-          ))}
-        </ul>
-      )}
+      <div aria-live="polite">
+        {posts.length === 0 ? (
+          <p className="mt-6 text-sm text-muted-foreground">
+            {q ? `No posts match "${q}".` : "No posts yet."}
+          </p>
+        ) : (
+          <ul className="space-y-4 mt-6">
+            {posts.map((p, i) => (
+              <BlurFade key={p.id} delay={i * 0.07} yOffset={4}>
+                <PostCard post={p} isAuthor={p.post_author === session?.user.id}/>
+              </BlurFade>
+            ))}
+          </ul>
+        )}
+      </div>
       <PostsNavBar numberPosts={postCount}/>
     </main>
     </NavTransition>

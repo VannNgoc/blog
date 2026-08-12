@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { getAdjacentPosts, getPostById } from "@/lib/posts/queries";
 import { PostContent } from "@/components/tiptap-templates/simple/post-content";
@@ -5,13 +7,48 @@ import { PostKeyboardNav } from "@/ui/posts/PostKeyboardNav";
 import Link from "next/link";
 import { auth } from '@/lib/auth/server'
 import { withPostImageUrls } from '@/lib/tiptap-utils'
-import { ACCESS_DRAFT } from '@/lib/constants'
+import { ACCESS_DRAFT, ACCESS_PUBLIC } from '@/lib/constants'
 import { NavTransition } from '@/ui/NavTransition'
+
+// De-duped per request (React's cache()) so generateMetadata and the page
+// body share one DB round trip instead of each fetching the post separately.
+const getCachedPost = cache((postId: number) => getPostById(postId));
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const postId = Number(id);
+  if (Number.isNaN(postId)) return {};
+
+  const [{ data: session }, post] = await Promise.all([
+    auth.getSession(),
+    getCachedPost(postId),
+  ]);
+  // Mirror the page's own access checks — a draft or a private post someone
+  // else authored must not leak its title/description into <head>.
+  if (!post || post.access === ACCESS_DRAFT) return {};
+  if (post.access !== ACCESS_PUBLIC && post.post_author !== (session?.user.id ?? '')) return {};
+
+  const description = post.post_description || undefined;
+  return {
+    title: post.post_name,
+    description,
+    openGraph: {
+      title: post.post_name,
+      description,
+      type: "article",
+      publishedTime: new Date(post.post_date).toISOString(),
+    },
+  };
+}
 
 export default async function Page({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   // "1" when user visits /posts/1
   const { id } = await params;
@@ -22,7 +59,7 @@ export default async function Page({
   // instead of paying two sequential network round trips.
   const [{ data: session }, post] = await Promise.all([
     auth.getSession(),
-    getPostById(postId),
+    getCachedPost(postId),
   ]);
   const userID = session?.user.id || '';
   if (!post) notFound();
@@ -35,7 +72,7 @@ export default async function Page({
 
   return (
   <NavTransition>
-  <main className="mx-auto w-full max-w-prose p-4 pb-24 text-foreground md:pb-4">
+  <main id="main-content" className="mx-auto w-full max-w-prose p-4 pb-24 text-foreground md:pb-4">
     <PostKeyboardNav
       key={`keyboard-nav-${post.id}`}
       nextHref={newer ? `/posts/${newer.id}` : undefined}
@@ -80,15 +117,17 @@ export default async function Page({
       {/* Desktop: simple inline links */}
       <div className="hidden sm:flex sm:items-center sm:justify-between">
         {older ? (
-          <Link className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline" href={`/posts/${older.id}`} transitionTypes={['nav-back']}>
+          <Link className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline" href={`/posts/${older.id}`} transitionTypes={['nav-back']} aria-keyshortcuts="ArrowLeft">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 shrink-0">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
             </svg>
             <span>{older.post_name}</span>
+            <kbd className="rounded border border-zinc-300 px-1 text-[10px] text-faint-foreground dark:border-zinc-600" aria-hidden="true">←</kbd>
           </Link>
         ) : <span />}
         {newer ? (
-          <Link className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline" href={`/posts/${newer.id}`} transitionTypes={['nav-forward']}>
+          <Link className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline" href={`/posts/${newer.id}`} transitionTypes={['nav-forward']} aria-keyshortcuts="ArrowRight">
+            <kbd className="rounded border border-zinc-300 px-1 text-[10px] text-faint-foreground dark:border-zinc-600" aria-hidden="true">→</kbd>
             <span>{newer.post_name}</span>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 shrink-0">
               <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />

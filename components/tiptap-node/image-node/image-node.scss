@@ -71,4 +71,17 @@
   .tiptap-image-node-hidden {
     opacity: 0;
   }
+
+  .tiptap-image-node-error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 16rem;
+    padding: 1rem;
+    border: 1px dashed var(--tt-border-color, currentColor);
+    border-radius: var(--tt-radius-xs, 0.25rem);
+    color: var(--muted-foreground, inherit);
+    font-size: 0.875rem;
+    text-align: center;
+  }
 }
