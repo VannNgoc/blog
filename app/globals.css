@@ -107,6 +107,35 @@ body {
   }
 }
 
+/*
+ * Tame the root transition, which runs *in addition to* the directional ones.
+ *
+ * Naming an element only pulls that element out of the root snapshot — the root
+ * still captures everything else and still animates. Left alone it uses the
+ * browser default, a 250ms `-ua-view-transition-fade-out`, so the whole old page
+ * was cross-fading against the whole new one at the same time as the directional
+ * slide below. Both pages sit at partial opacity through the middle of that,
+ * which is why two posts were legible at once — worst on a phone, where the
+ * text column fills the screen.
+ *
+ * 90ms out / 120ms in, sequenced so they never overlap, and opacity-only.
+ */
+::view-transition-old(root) {
+  animation: 90ms ease-in both vt-root-fade reverse;
+}
+::view-transition-new(root) {
+  animation: 120ms ease-out 90ms both vt-root-fade;
+}
+
+@keyframes vt-root-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 ::view-transition-old(.nav-forward) {
   --vt-offset: -60px;
   animation:
@@ -133,6 +162,30 @@ body {
     400ms ease-in-out both vt-slide;
 }
 
+/*
+ * Phones drop the blur and the slide entirely.
+ *
+ * `vt-fade` blurs the snapshot, and that snapshot is the whole article — on a
+ * phone GPU, recomputing a blur across a surface that tall every frame is what
+ * makes the transition stutter. The 400ms slide compounds it: at phone width
+ * the text column spans the full viewport, so a screen's worth of type is still
+ * travelling long after the 150ms fade has ended. Opacity-only and shorter
+ * reads as a clean swap rather than a movement.
+ *
+ * Desktop keeps the directional slide — there the column is narrow, centred,
+ * and the motion actually communicates direction.
+ */
+@media (max-width: 767px) {
+  ::view-transition-old(.nav-forward),
+  ::view-transition-old(.nav-back) {
+    animation: 90ms ease-in both vt-root-fade reverse;
+  }
+  ::view-transition-new(.nav-forward),
+  ::view-transition-new(.nav-back) {
+    animation: 120ms ease-out 90ms both vt-root-fade;
+  }
+}
+
 /* The header is the reader's spatial anchor: it must stay put so the motion
    reads as "the content moved", not "the whole viewport moved". */
 ::view-transition-group(site-header) {
@@ -149,6 +202,29 @@ body {
 /* The transition overlay otherwise swallows clicks for its whole duration. */
 ::view-transition {
   pointer-events: none;
+}
+
+/*
+ * Touch devices get no transition at all.
+ *
+ * Cross-fading two full articles is the one thing that reads worst on a phone:
+ * for the middle of the animation both posts are painted at partial opacity and
+ * the text interleaves into noise. Sequencing the fades avoids that in theory,
+ * but iOS Safari kept producing the doubled frame in practice, and a reader
+ * tapping through posts gains nothing from the animation to begin with. An
+ * instant swap is the honest default here.
+ *
+ * `hover: none` rather than a width query: it keys off the input device, so a
+ * narrow desktop window still animates and a tablet does not. `!important`
+ * mirrors the reduced-motion block below — the per-name rules above carry more
+ * specificity than `*` and would otherwise win.
+ */
+@media (hover: none) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation: none !important;
+  }
 }
 
 /* Directional slides simulate movement across the viewport, which is the most
