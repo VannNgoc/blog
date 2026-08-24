@@ -32,8 +32,10 @@ export async function getPosts(userID: string | undefined, currentPage: number) 
   return posts;
 }
 
+/** The dashboard is the author's own shelf: their published and private posts.
+    Drafts are excluded here; they live on /drafts. */
 export async function getUserPostsCount(userID: string) {
-  const [{ count }] = await sql`SELECT COUNT(*) FROM "POSTS" WHERE access = 1 OR (post_author = ${userID} AND access != ${ACCESS_DRAFT})`;
+  const [{ count }] = await sql`SELECT COUNT(*) FROM "POSTS" WHERE post_author = ${userID} AND access != ${ACCESS_DRAFT}`;
   return count;
 }
 
@@ -51,7 +53,7 @@ export async function getUserPosts(userID: string, currentPage: number) {
       u.username
     FROM "POSTS" AS p
     INNER JOIN "USERS" AS u ON p.post_author = u.id
-    WHERE p.access = 1 OR (p.post_author = ${userID} AND p.access != ${ACCESS_DRAFT})
+    WHERE p.post_author = ${userID} AND p.access != ${ACCESS_DRAFT}
     ORDER BY post_date DESC, id DESC
     LIMIT ${PAGINATION_LIMIT} OFFSET ${(currentPage - 1) * PAGINATION_LIMIT}
   `) as PostWithAuthorRow[];
@@ -145,9 +147,35 @@ export async function getAdjacentPosts(input: { id: number; post_date: Date; use
   return { newer: newer[0], older: older[0] };
 }
 
-export async function getSearchedPosts(searchString: string, userID: string | undefined, currentPage: number) {
-  const accessFilter = userID
-    ? sql`(p.access = 1 OR (p.post_author = ${userID} AND p.access != ${ACCESS_DRAFT}))`
+/** A substring LIKE pattern, with the wildcards a user typed escaped so they
+    match literally instead of widening the search. */
+function usernamePattern(searchString: string) {
+  return `%${searchString.replace(/[\\%_]/g, (char) => `\\${char}`)}%`;
+}
+
+/** What a search term is allowed to match.
+
+    On the public feed a term matches a post's indexed content *or* its author's
+    name, so "vanna" finds that author's posts. The username half is a substring
+    ILIKE rather than another tsquery on purpose: names aren't english words, so
+    stemming mangles them and whole-lexeme matching would miss the partial term
+    someone types into a debounced box. It costs the GIN index on that branch,
+    which is a fair trade at this table size.
+
+    On the dashboard (authorID set) every row is already the viewer's own, so
+    matching their own name would be noise: content only. */
+function searchMatchFilter(searchString: string, authorID: string | undefined) {
+  const contentMatch = sql`p.search_vector @@ plainto_tsquery('english', ${searchString})`;
+  return authorID
+    ? contentMatch
+    : sql`(${contentMatch} OR u.username ILIKE ${usernamePattern(searchString)} ESCAPE '\\')`;
+}
+
+/** Pass an authorID to search that author's own posts (published and private,
+    no drafts); pass undefined to search the public feed. */
+export async function getSearchedPosts(searchString: string, authorID: string | undefined, currentPage: number) {
+  const accessFilter = authorID
+    ? sql`(p.post_author = ${authorID} AND p.access != ${ACCESS_DRAFT})`
     : sql`p.access = 1`;
 
   const posts = (await sql`
@@ -164,22 +192,26 @@ export async function getSearchedPosts(searchString: string, userID: string | un
     FROM "POSTS" AS p
     INNER JOIN "USERS" AS u ON p.post_author = u.id
     WHERE ${accessFilter}
-      AND p.search_vector @@ plainto_tsquery('english', ${searchString})
+      AND ${searchMatchFilter(searchString, authorID)}
     ORDER BY ts_rank(p.search_vector, plainto_tsquery('english', ${searchString})) DESC, post_date DESC, id DESC
     LIMIT ${PAGINATION_LIMIT} OFFSET ${(currentPage - 1) * PAGINATION_LIMIT}
   `) as PostWithAuthorRow[];
   return posts;
 }
 
-export async function getSearchedPostsCount(searchString: string, userID?: string) {
-  const accessFilter = userID
-    ? sql`(p.access = 1 OR (p.post_author = ${userID} AND p.access != ${ACCESS_DRAFT}))`
+/** Counterpart to getSearchedPosts; same authorID semantics. The join to USERS
+    is what makes the author name matchable, and it keeps this count in step with
+    the list query above, which has always inner-joined. */
+export async function getSearchedPostsCount(searchString: string, authorID?: string) {
+  const accessFilter = authorID
+    ? sql`(p.post_author = ${authorID} AND p.access != ${ACCESS_DRAFT})`
     : sql`p.access = 1`;
 
   const [{ count }] = await sql`
     SELECT COUNT(*) FROM "POSTS" AS p
+    INNER JOIN "USERS" AS u ON p.post_author = u.id
     WHERE ${accessFilter}
-      AND p.search_vector @@ plainto_tsquery('english', ${searchString})
+      AND ${searchMatchFilter(searchString, authorID)}
   `;
   return count;
 }

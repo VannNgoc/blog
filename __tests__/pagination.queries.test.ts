@@ -75,14 +75,24 @@ describe("getPosts pagination", () => {
   });
 });
 
+/** The SQL text of a mocked call, with the interpolated values inlined so a
+    test can assert on the whole predicate. */
+function queryText(call: [TemplateStringsArray, ...unknown[]]) {
+  const [strings, ...values] = call;
+  return strings.reduce((acc, part, i) => acc + part + (i < values.length ? String(values[i]) : ""), "");
+}
+
 describe("getUserPostsCount", () => {
-  it("returns count of posts visible to the user", async () => {
+  it("counts only the signed-in author's own non-draft posts", async () => {
     mockSql.mockResolvedValueOnce([{ count: "8" }]);
     const count = await getUserPostsCount("user-1");
     expect(count).toBe("8");
+    expect(queryText(mockSql.mock.calls[0] as [TemplateStringsArray, ...unknown[]])).toContain(
+      "post_author = user-1 AND access != 4",
+    );
   });
 
-  it("returns 0 when user has no posts and no public posts exist", async () => {
+  it("returns 0 when the user has written nothing", async () => {
     mockSql.mockResolvedValueOnce([{ count: "0" }]);
     const count = await getUserPostsCount("user-1");
     expect(count).toBe("0");
@@ -90,11 +100,20 @@ describe("getUserPostsCount", () => {
 });
 
 describe("getUserPosts pagination", () => {
-  it("returns public posts and the user's own private posts", async () => {
-    const privatePost = { ...mockPost, id: 2, access: 0, post_author: "user-1" };
+  it("returns the author's own public and private posts", async () => {
+    const privatePost = { ...mockPost, id: 2, access: 2, post_author: "user-1" };
     mockSql.mockResolvedValueOnce([mockPost, privatePost]);
     const posts = await getUserPosts("user-1", 1);
     expect(posts).toHaveLength(2);
+    expect(posts.every((p) => p.post_author === "user-1")).toBe(true);
+  });
+
+  it("filters to the author and excludes drafts, not to all public posts", async () => {
+    mockSql.mockResolvedValueOnce([mockPost]);
+    await getUserPosts("user-1", 1);
+    const text = queryText(mockSql.mock.calls[0] as [TemplateStringsArray, ...unknown[]]);
+    expect(text).toContain("WHERE p.post_author = user-1 AND p.access != 4");
+    expect(text).not.toContain("p.access = 1 OR");
   });
 
   it("returns posts for page 1", async () => {
