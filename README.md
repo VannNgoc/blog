@@ -53,7 +53,7 @@ A few decisions I made deliberately:
 - **Authorization at every entry point.** Listing queries filter by access level in SQL; the post detail and edit pages re-check access/authorship server-side, so private posts aren't reachable by URL guessing.
 - **Plain SQL over an ORM.** Queries use Neon's tagged-template driver directly. For an app this size I wanted to stay close to the SQL rather than learn an ORM's abstraction over it.
 - **Search and pagination live in the URL, not client state.** Both drive the same server-rendered query (`?q=`, `?page=`), so there's one data-fetching path, results are bookmarkable/shareable, and there's no separate client-side fetch/API route to keep in sync with the server-rendered list.
-- **Search runs in Postgres, not the app.** A trigger-maintained `tsvector` column plus a GIN index (`sql/add_search_vector.sql`) means matching is an indexed lookup, not an app-side scan that re-parses every post's content on every keystroke.
+- **Search runs in Postgres, not the app.** A trigger-maintained `tsvector` column plus a GIN index (`sql/add_search_vector.sql`) means matching is an indexed lookup, not an app-side scan that re-parses every post's content on every keystroke. On the public feed a term also matches the author's name, via a substring `ILIKE` rather than a second `tsquery`: names aren't english words, so stemming mangles them and whole-lexeme matching would miss the partial name someone types into a debounced box. That half of the `OR` gives up the index, which is the right trade at this size — folding usernames into the `tsvector` would mean re-syncing every one of an author's posts on rename.
 
 ![Full-text search](docs/screenshots/search.png)
 
