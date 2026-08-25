@@ -93,6 +93,25 @@ describe("PostContent", () => {
     })
   })
 
+  /** Reproduces the post-191 failure: an author inserted an upload
+      placeholder, saved without choosing a file, and the reader-facing page
+      threw instead of rendering — because the read-only schema registers no
+      `imageUpload` extension. */
+  it("renders a post containing an abandoned imageUpload placeholder instead of throwing", () => {
+    const doc: JSONContent = {
+      type: "doc",
+      content: [
+        { type: "paragraph", content: [{ type: "text", text: "Deep Creek Lake" }] },
+        { type: "imageUpload", attrs: { accept: "image/*" } },
+      ],
+    }
+
+    const { container } = render(<PostContent content={doc} />)
+
+    expect(container.textContent).toContain("Deep Creek Lake")
+    expect(container.querySelector('[data-type="image-upload"]')).not.toBeInTheDocument()
+  })
+
   it("decodes below-the-fold images off the main thread, but leaves the LCP image alone", () => {
     const { container } = render(<PostContent content={docWithImages()} />)
     const imgs = container.querySelectorAll<HTMLImageElement>(".tiptap-image-node img")

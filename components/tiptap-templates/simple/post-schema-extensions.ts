@@ -16,9 +16,15 @@ import { HorizontalRule } from "@/components/tiptap-node/horizontal-rule-node/ho
  * rendered — shared between the editable SimpleEditor and the read-only
  * PostContent viewer so the two can never drift on what node/mark types a
  * stored post can contain. Anything editing-only (toolbar UI, image upload,
- * drag/drop/paste handling) stays out of this list: those extensions never
- * add a node type that ends up in a *saved* document, so read-only content
- * doesn't need them.
+ * drag/drop/paste handling) stays out of this list, so read-only content
+ * doesn't carry the editor's machinery.
+ *
+ * That is NOT the same as saying those node types can't reach a saved
+ * document — they can. `imageUpload` inserts a placeholder that persists if
+ * the author saves without choosing a file, and `renderToReactElement` throws
+ * on any node type it has no extension for, so one abandoned upload widget
+ * made a whole post unreadable. `stripEditorOnlyNodes` drops them on both the
+ * write and read paths; anything editor-only must stay in sync with that set.
  *
  * The `image` node is deliberately NOT here: SimpleEditor and PostContent
  * each register their own variant (resizable `Image` vs. skeleton-NodeView
