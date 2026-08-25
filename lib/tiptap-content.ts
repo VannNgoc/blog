@@ -22,3 +22,33 @@ export function tiptapToPlainText(node?: JSONContent): string {
 export function tiptapFirstBlockText(doc?: JSONContent): string {
   return tiptapToPlainText(doc?.content?.[0]);
 }
+
+/**
+ * Node types the editor creates as transient UI, which are never meaningful
+ * content and have no read-only counterpart.
+ *
+ * `imageUpload` is the drop-zone placeholder the toolbar inserts. It's meant to
+ * be replaced by a real `image` node once a file finishes uploading — but if an
+ * author inserts one and saves without picking a file, it persists into
+ * `post_body_json`. The read-only renderer registers no extension for it (see
+ * `postSchemaExtensions`), so it threw on render, and the reader got an error
+ * page instead of the post. Post 191 is exactly that case.
+ */
+const EDITOR_ONLY_NODE_TYPES = new Set(["imageUpload"]);
+
+/**
+ * Drops editor-only placeholder nodes from a stored document.
+ *
+ * Applied on save so new posts never carry them, and again on read so posts
+ * saved before that guard existed still render. The editor itself must NOT use
+ * this — `imageUpload` is a legitimate node while composing.
+ */
+export function stripEditorOnlyNodes(doc: JSONContent): JSONContent {
+  if (!doc.content?.length) return doc;
+
+  const content = doc.content
+    .filter((child) => !(child.type && EDITOR_ONLY_NODE_TYPES.has(child.type)))
+    .map(stripEditorOnlyNodes);
+
+  return { ...doc, content };
+}

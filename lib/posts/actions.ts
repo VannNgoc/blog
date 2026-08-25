@@ -11,6 +11,7 @@ import { ACCESS_DRAFT } from '@/lib/constants';
 import { getPostById } from '@/lib/posts/queries';
 import { extractImagePathnames } from '@/lib/tiptap-utils';
 import type { JSONContent } from "@tiptap/core";
+import { stripEditorOnlyNodes } from "@/lib/tiptap-content";
 
 /** Build today's date as YYYY-MM-DD for post_date / post_edit_date columns. */
 function today() {
@@ -70,7 +71,9 @@ export async function createPostHandler(input: {
   /** Where to land after saving. Defaults to the list the post now belongs to. */
   redirectTo?: string;
 }) {
-  const body = JSON.parse(input.json) as JSONContent;
+  // Abandoned upload placeholders must never reach storage: the read-only
+  // renderer has no extension for them and throws (see stripEditorOnlyNodes).
+  const body = stripEditorOnlyNodes(JSON.parse(input.json) as JSONContent);
 
   const { title: post_name, description: post_description, access: access_type } =
     postMetaSchema.parse({
@@ -107,7 +110,9 @@ export async function editPostHandler(input: {
   /** Where to land after saving. Defaults to the post's own page. */
   redirectTo?: string;
 }) {
-  const body = JSON.parse(input.json) as JSONContent;
+  // Abandoned upload placeholders must never reach storage: the read-only
+  // renderer has no extension for them and throws (see stripEditorOnlyNodes).
+  const body = stripEditorOnlyNodes(JSON.parse(input.json) as JSONContent);
 
   const { title: post_name, description: post_description, access: access_type } =
     postMetaSchema.parse({

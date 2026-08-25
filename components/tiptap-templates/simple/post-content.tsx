@@ -1,6 +1,8 @@
 import { renderToReactElement } from "@tiptap/static-renderer"
 import type { JSONContent } from "@tiptap/core"
 
+import { stripEditorOnlyNodes } from "@/lib/tiptap-content"
+
 import { postSchemaExtensions } from "@/components/tiptap-templates/simple/post-schema-extensions"
 import { StaticImageNode } from "@/components/tiptap-node/image-node/image-node-static-extension"
 import { PostImageLoader } from "@/components/tiptap-node/image-node/post-image-loader"
@@ -34,7 +36,15 @@ const staticExtensions = [...postSchemaExtensions, StaticImageNode]
  * piece left, and it only runs the skeleton-while-loading effect on images.
  */
 export function PostContent({ content }: PostContentProps) {
-  const rendered = renderToReactElement({ content, extensions: staticExtensions })
+  // Posts saved before the write-side guard existed can still contain an
+  // editor-only placeholder node, which `renderToReactElement` has no
+  // extension for and throws on — turning one abandoned upload widget into a
+  // whole unreadable post. Strip here too so the read path can't be broken by
+  // whatever is already in the database.
+  const rendered = renderToReactElement({
+    content: stripEditorOnlyNodes(content),
+    extensions: staticExtensions,
+  })
 
   return (
     <div className="simple-editor-wrapper simple-editor-wrapper--readonly">
