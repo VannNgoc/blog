@@ -29,9 +29,20 @@ export const StaticImageNode = TiptapImage.extend({
   renderHTML({ HTMLAttributes }) {
     const { loading, imgWidth, imgHeight, ...rest } = HTMLAttributes
     const isEager = loading === "eager"
+    // Deliberately NOT marked `tiptap-image-node-hidden` here, unlike the
+    // editor's NodeView. That class is `opacity: 0`, and only a client-side
+    // effect removes it — which pinned every reader-facing image's paint to
+    // hydration finishing, since an element at `opacity: 0` is not a Largest
+    // Contentful Paint candidate. The image would arrive early (it's even
+    // preloaded, below) and then sit invisible waiting on JS. The skeleton
+    // shares this element's grid cell, so an image that hasn't decoded yet
+    // still shows the placeholder underneath; letting the image paint the
+    // instant it decodes needs no JavaScript at all.
     const imgAttrs: Record<string, unknown> = mergeAttributes(rest, {
       loading: isEager ? "eager" : "lazy",
-      class: "tiptap-image-node-hidden",
+      // Below-the-fold images are frequently many megapixels; decoding those
+      // off the main thread keeps them from janking the page while reading.
+      ...(isEager ? {} : { decoding: "async" }),
     })
     // Only set on the LCP candidate: an explicit "high" is what tells the
     // browser (and, server-rendered via React, triggers an automatic

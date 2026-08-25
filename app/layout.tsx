@@ -12,9 +12,14 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
+// Exposed as --font-mono for prose/code that may want it, but nothing in the
+// app currently renders in it. Preloading it downloaded a whole second family
+// on every route for glyphs that never got drawn; `preload: false` keeps the
+// variable working and fetches the face only if something actually uses it.
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  preload: false,
 });
 
 export const metadata: Metadata = {

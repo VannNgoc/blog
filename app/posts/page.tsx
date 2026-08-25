@@ -41,8 +41,14 @@ export default async function PostsPage({ searchParams }: { searchParams: Promis
           </p>
         ) : (
           <ul className="space-y-4 mt-6">
+            {/* The stagger is what gives the list its cascade, but every card
+                sits at opacity 0 until its delay elapses, and an invisible
+                element is not a Largest Contentful Paint candidate. Ten cards
+                at 0.07s each pushed the last one to 0.63s — and LCP with it.
+                Capping at the third card keeps the cascade legible where the
+                eye actually lands while bounding the delay at 0.14s. */}
             {posts.map((p, i) => (
-              <BlurFade key={p.id} delay={i * 0.07} yOffset={4}>
+              <BlurFade key={p.id} delay={Math.min(i, 2) * 0.07} yOffset={4}>
                 <PostCard post={p} isAuthor={p.post_author === session?.user.id}/>
               </BlurFade>
             ))}

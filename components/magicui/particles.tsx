@@ -58,8 +58,16 @@ export function Particles({
     const container = containerRef.current;
     if (!canvas || !container) return;
 
+    // Purely decorative drifting dots, and an uninterruptible rAF loop at that.
+    // Anyone asking for reduced motion gets a blank canvas and none of the work.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+
+    // Phones pay the most for this and show it the least — half the dots at a
+    // third of the screen size reads identically and halves the per-frame cost.
+    const count = window.innerWidth < 768 ? Math.round(quantity / 2) : quantity;
 
     const dpr = window.devicePixelRatio || 1;
 
@@ -123,7 +131,7 @@ export function Particles({
         return true;
       });
 
-      while (circles.current.length < quantity) {
+      while (circles.current.length < count) {
         circles.current.push(makeCircle());
       }
 
@@ -135,9 +143,24 @@ export function Particles({
       mouse.current = { x: e.clientX - left, y: e.clientY - top };
     };
 
-    initCanvas();
-    for (let i = 0; i < quantity; i++) circles.current.push(makeCircle());
-    animate();
+    // Kicking the loop off inline puts `count` circles on the main thread at
+    // exactly the moment React is hydrating and the hero text wants to paint.
+    // Waiting for the first idle slot lets the contentful paint land first —
+    // a background this faint can afford to arrive a few frames late.
+    const start = () => {
+      initCanvas();
+      for (let i = 0; i < count; i++) circles.current.push(makeCircle());
+      animate();
+    };
+
+    let cancelStart: () => void;
+    if (typeof window.requestIdleCallback === "function") {
+      const handle = window.requestIdleCallback(start, { timeout: 1000 });
+      cancelStart = () => window.cancelIdleCallback(handle);
+    } else {
+      const handle = window.setTimeout(start, 200);
+      cancelStart = () => window.clearTimeout(handle);
+    }
 
     const onThemeChange = () => {
       rgb = hexToRgb(resolveColor());
@@ -153,6 +176,7 @@ export function Particles({
     container.addEventListener("mousemove", onMouseMove);
 
     return () => {
+      cancelStart();
       cancelAnimationFrame(rafId.current);
       observer.disconnect();
       window.removeEventListener("resize", initCanvas);

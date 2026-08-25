@@ -9,11 +9,16 @@ type PostImageLoaderProps = {
 
 /**
  * Progressively enhances the statically-rendered post body: once each image
- * finishes loading (or immediately, if it's already cached), removes its
- * skeleton placeholder and fades the image in. This is the one piece of the
- * read-only post view that still needs to run client-side — everything else
- * comes from the server already rendered, so this component only carries
- * the tiny load-listener effect, not an editor.
+ * finishes loading (or immediately, if it's already cached), retires its
+ * skeleton placeholder.
+ *
+ * Note what this deliberately does *not* do any more — reveal the image. The
+ * image is visible from the server-rendered HTML onward and paints as soon as
+ * it decodes; the skeleton simply sits in the same grid cell underneath until
+ * then. Gating the reveal on this effect meant the paint waited for the whole
+ * client bundle to download and hydrate, which is a poor trade for a fade.
+ * The skeleton removal below is pure cleanup: it's off the critical path, so
+ * if this never runs, readers still see every image.
  */
 export function PostImageLoader({ className, children }: PostImageLoaderProps) {
   const ref = useRef<HTMLDivElement>(null)
