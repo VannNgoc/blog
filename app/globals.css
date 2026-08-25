@@ -38,8 +38,14 @@
   --color-foreground: var(--foreground);
   --color-muted-foreground: var(--muted-foreground);
   --color-faint-foreground: var(--faint-foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-lato);
   --font-mono: var(--font-geist-mono);
+  /* Drives the `font-serif` utility. The CJK faces are named explicitly
+     because Source Serif 4 has no CJK coverage — post #190 is titled 不忍池,
+     and without this the browser picks a *sans* CJK fallback per glyph and
+     drops a mismatched title into an otherwise serif page. */
+  --font-serif: var(--font-source-serif), "Hiragino Mincho ProN", "Yu Mincho",
+    "Songti SC", "Noto Serif CJK SC", Georgia, serif;
 }
 
 .dark {
@@ -73,7 +79,33 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* `--font-lato` is defined on <body> itself by next/font's generated class
+     (see the root layout), so it resolves here. This line used to read
+     `Arial, Helvetica, sans-serif` — the rule create-next-app ships — which
+     silently won over whatever face was loaded, so the app rendered in Arial
+     while paying to download a font nothing used.
+
+     The fallback goes *inside* var() deliberately: `var(--x), Arial` makes the
+     whole declaration invalid-at-computed-value-time if --x is ever undefined,
+     dropping it entirely rather than falling back. */
+  font-family: var(--font-lato, Arial), Arial, Helvetica, sans-serif;
+}
+
+/* Headings take the sans face, against a serif body — the reverse of the usual
+   convention, and the reason it works here: a serif heading over serif prose
+   left too little separation between them, so weight and size were doing all
+   the work. A sans/serif split separates them by *voice* instead.
+   
+   An element selector rather than a utility on each component, so a new heading
+   can't silently miss it. It also has to be stated explicitly: headings inside
+   a post body would otherwise inherit the serif from `.tiptap.ProseMirror`. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-lato, Helvetica), Helvetica, Arial, sans-serif;
 }
 
 /*

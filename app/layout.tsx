@@ -2,14 +2,44 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from "@vercel/analytics/next"
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Lato, Source_Serif_4 } from "next/font/google";
 import Header from "../ui/header";
 
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// The UI and display face. Lato is a humanist sans — warmer and more open
+// than a geometric grotesque, which keeps it from reading as a dashboard next
+// to the serif body. Only 400 and 700 are loaded: Lato isn't a variable font,
+// so every additional weight is another file to download.
+const lato = Lato({
+  variable: "--font-lato",
   subsets: ["latin"],
+  weight: ["400", "700"],
+  display: "optional",
+});
+
+// The reading face. Post bodies and post titles are the one surface where
+// people actually *read* rather than operate, and Geist is a UI grotesque —
+// good for chrome, not built for sustained prose. Source Serif 4 is drawn for
+// screen reading and carries the page's personality, which matters more than
+// usual here because the palette is deliberately monochrome.
+//
+// Loaded through next/font rather than a <link>: the CSP is `font-src 'self'`,
+// so a Google Fonts URL is silently blocked (which is exactly how the vendored
+// template's Inter and DM Sans failed). next/font self-hosts at build time.
+const sourceSerif = Source_Serif_4({
+  variable: "--font-source-serif",
+  subsets: ["latin"],
+  // `optional`, not the `swap` default. With `swap` the body text paints in
+  // the fallback, then repaints when the real face arrives — and Chrome
+  // records that repaint as a *new* Largest Contentful Paint candidate, so LCP
+  // tracked font download rather than content. Measured on /posts/187: LCP ran
+  // 2126ms when the face happened to arrive early and 4291ms when it didn't,
+  // off the same build. `optional` gives the font ~100ms and otherwise keeps
+  // the fallback for that page view, so LCP stops depending on the race.
+  // next/font's metric-matched fallback means the fallback is close enough in
+  // size that nothing shifts (CLS stayed 0 throughout).
+  display: "optional",
 });
 
 // Exposed as --font-mono for prose/code that may want it, but nothing in the
@@ -55,7 +85,7 @@ export default async function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased flex min-h-screen flex-col`}
+        className={`${lato.variable} ${geistMono.variable} ${sourceSerif.variable} antialiased flex min-h-screen flex-col`}
       >
         <a
           href="#main-content"

@@ -1,4 +1,9 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
+/* The upstream template pulled Inter and DM Sans from Google Fonts here. That
+   @import was dead code in this app: the CSP set in proxy.ts is `style-src
+   'self'`, so the request was blocked and neither face ever downloaded —
+   every declaration below that named them silently fell back to the system
+   sans. The app self-hosts Geist through next/font instead (which satisfies
+   `font-src 'self'`), so the typeface is now the one the app actually loads. */
 
 body {
   --tt-toolbar-height: 44px;
@@ -10,7 +15,10 @@ body {
 }
 
 body {
-  font-family: "Inter", sans-serif;
+  /* No font-family here on purpose. This file is imported by post-content.tsx,
+     so it lands after globals.css in the bundle and a `body` rule here would
+     override the app's own typeface on every page that renders a post body —
+     which is exactly what happened. The host app owns the body font. */
   color: var(--tt-theme-text);
   font-optical-sizing: auto;
   font-weight: 400;
@@ -51,7 +59,23 @@ body,
 }
 
 .tiptap.ProseMirror {
-  font-family: "DM Sans", sans-serif;
+  /* The reading face, applied to the editor as well as the published post so
+     composing shows you what publishing produces. `--font-source-serif` comes
+     from next/font (see the root layout); the CJK faces are listed because
+     Source Serif 4 has no CJK glyphs and the default fallback would be a sans.
+     The fallback sits inside var() so an undefined variable can't invalidate
+     the whole declaration. */
+  font-family: var(--font-source-serif, Georgia), "Hiragino Mincho ProN",
+    "Yu Mincho", "Songti SC", "Noto Serif CJK SC", Georgia, serif;
+
+  /* 18px, not the app's 16px. Source Serif 4 is narrower than Geist, so at
+     16px this column ran to 77 characters a line — past the 55–75 band where
+     the eye tracks comfortably. Sizing up pulls it back to ~68 and suits a
+     serif body, which wants more room than a UI grotesque. The looser leading
+     is the same reasoning as the contrast tuning in globals.css: this surface
+     is read for minutes at a time, not scanned. */
+  font-size: 1.125rem;
+  line-height: 1.65;
 }
 
 .simple-editor-wrapper {

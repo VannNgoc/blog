@@ -79,7 +79,12 @@ export default async function Page({
       previousHref={older ? `/posts/${older.id}` : undefined}
     />
     <div className="text-center">
-      <h2 className="text-4xl mt-2 tracking-wider text-foreground">{post.post_name}</h2>
+      {/* The post's own title is this page's h1. It was an h2, which left the
+          most-shared and most-indexed page type on the site with no top-level
+          heading at all — every other route has one. Lighthouse doesn't catch
+          it, because `heading-order` only flags *skipped* levels, not a
+          missing h1. Styling is unchanged; only the semantics move. */}
+      <h1 className="text-4xl mt-2 tracking-wider text-foreground">{post.post_name}</h1>
       <p className="text-muted-foreground">{post.username}</p>
       <p className="text-muted-foreground">{new Date(post.post_date).toLocaleDateString()}</p>
     </div>
