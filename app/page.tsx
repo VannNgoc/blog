@@ -5,7 +5,7 @@ import { BlurFade } from "@/components/magicui/blur-fade";
 
 export default function Home() {
   return (
-    <div className="relative flex flex-1 items-center justify-center overflow-hidden">
+    <main id="main-content" className="relative flex flex-1 items-center justify-center overflow-hidden">
       <Particles
         quantity={120}
         color="#000000"
@@ -63,6 +63,6 @@ export default function Home() {
           </Link>
         </BlurFade>
       </div>
-    </div>
+    </main>
   );
 }
