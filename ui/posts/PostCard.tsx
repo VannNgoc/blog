@@ -31,7 +31,11 @@ export function PostCard({ post, isAuthor, showAccessBadge = false }: PostCardPr
         </div>
         <p className="text-sm text-muted-foreground">Author: {post.username}</p>
 
-        <p className="my-3 text-sm line-clamp-3 text-muted-foreground">
+        {/* The excerpt is the post's own prose, so it takes the reading face
+            rather than the UI one — the card title is a heading and picks up
+            the display face from the global rule. Everything else on the card
+            (author, date, badges) is metadata and stays in the UI face. */}
+        <p className="font-serif my-3 text-[0.9375rem] line-clamp-3 text-muted-foreground">
           {preview}
         </p>
 

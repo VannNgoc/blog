@@ -96,6 +96,52 @@ describe("Search", () => {
     expect(mockPush).toHaveBeenCalledWith("/posts");
   });
 
+  /** The effect used to fire unconditionally, so simply loading /posts
+      re-requested the page the user had just loaded. Harmless when nothing
+      showed it — but now that a pending spinner is wired to that navigation,
+      it would flash on every visit. */
+  it("does not navigate on mount when nothing has been typed", () => {
+    render(<Search />);
+
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
+
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it("does not navigate on mount when arriving on an existing query", () => {
+    mockQuery = "sunset";
+    render(<Search />);
+
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
+
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it("does not re-navigate when typing ends back on the query already shown", () => {
+    mockQuery = "sunset";
+    render(<Search />);
+    const input = screen.getByRole("textbox", { name: "Search posts" });
+
+    fireEvent.change(input, { target: { value: "sunse" } });
+    fireEvent.change(input, { target: { value: "sunset" } });
+
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
+
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it("exposes a live region so the in-between state reaches a screen reader", () => {
+    render(<Search />);
+
+    expect(screen.getByRole("status")).toBeInTheDocument();
+  });
+
   it("returns focus to the input after clearing", () => {
     mockQuery = "sunset";
     render(<Search />);

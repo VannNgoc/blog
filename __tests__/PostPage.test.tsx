@@ -104,6 +104,26 @@ describe("post detail page access control", () => {
     expect(mockNotFound).not.toHaveBeenCalled();
   });
 
+  /** The post title is this page's only top-level heading. It shipped as an
+      h2, leaving the most-shared page type on the site with no h1 — and
+      Lighthouse scores it 100 regardless, because `heading-order` only flags
+      skipped levels, never a missing top level. */
+  it("renders the post title as the page's h1", async () => {
+    mockGetPostById.mockResolvedValue(publicPost);
+
+    render(await renderPage("7"));
+
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Public Post");
+  });
+
+  it("has exactly one h1", async () => {
+    mockGetPostById.mockResolvedValue(publicPost);
+
+    render(await renderPage("7"));
+
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+  });
+
   it("returns notFound when the post does not exist", async () => {
     mockGetPostById.mockResolvedValue(undefined);
 
