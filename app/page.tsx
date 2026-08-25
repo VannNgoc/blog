@@ -46,7 +46,7 @@ export default function Home() {
           <Link
             href="/posts"
             transitionTypes={["nav-forward"]}
-            className="group mt-12 inline-flex min-h-11 items-center gap-2 rounded-full border border-(--faint-foreground) px-6 py-3 tracking-wide text-muted-foreground transition-colors hover:border-(--foreground) hover:bg-zinc-50 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--muted-foreground) dark:hover:bg-zinc-900"
+            className="group mt-12 inline-flex min-h-11 items-center gap-2 rounded-full border border-(--faint-foreground) px-6 py-3 tracking-wide text-muted-foreground transition-colors hover:border-(--foreground) hover:bg-zinc-50 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-muted-foreground dark:hover:bg-zinc-900"
           >
             read posts
             <svg

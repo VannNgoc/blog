@@ -26,6 +26,15 @@ jest.mock("@/lib/auth/server", () => ({
   },
 }));
 
+// Reaches @vercel/blob through the server actions — ESM jest can't parse.
+jest.mock("@/ui/posts/DeletePostConfirmationButton", () => ({
+  DeletePostConfirmButton: ({ id, redirectTo, label }: { id: number; redirectTo?: string; label?: string }) => (
+    <button data-testid="delete-btn" data-id={id} data-redirect={redirectTo} data-label={label}>
+      {label ?? "Delete"}
+    </button>
+  ),
+}));
+
 jest.mock("next/link", () => {
   function MockLink({ href, children }: { href: string; children: ReactNode }) {
     return <a href={href}>{children}</a>;
@@ -122,6 +131,71 @@ describe("post detail page access control", () => {
     render(await renderPage("7"));
 
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+  });
+
+  /** Editing used to mean leaving the post, finding it again in a list, and
+      paging to it — when the moment you know you want to change something is
+      while you're reading it. */
+  it("offers the author an edit link to this post", async () => {
+    mockGetPostById.mockResolvedValue(privatePost);
+    mockGetSession.mockResolvedValue({ data: { user: { id: "author-1" } } });
+
+    render(await renderPage("7"));
+
+    expect(screen.getByRole("link", { name: /Edit this post/ })).toHaveAttribute(
+      "href",
+      "/posts/7/edit",
+    );
+  });
+
+  it("offers the author a delete, which is where deleting now lives", async () => {
+    mockGetPostById.mockResolvedValue(privatePost);
+    mockGetSession.mockResolvedValue({ data: { user: { id: "author-1" } } });
+
+    render(await renderPage("7"));
+
+    expect(screen.getByTestId("delete-btn")).toBeInTheDocument();
+  });
+
+  /** Beside a labelled "Edit this post", a bare red icon read as an orphan
+      rather than a sibling action. */
+  it("labels the delete so it reads as a peer of the edit action", async () => {
+    mockGetPostById.mockResolvedValue(privatePost);
+    mockGetSession.mockResolvedValue({ data: { user: { id: "author-1" } } });
+
+    render(await renderPage("7"));
+
+    expect(screen.getByTestId("delete-btn")).toHaveAttribute("data-label", "Delete post");
+  });
+
+  /** The page it sits on stops existing the moment it succeeds, so it has to
+      say where to go next — unlike the same button used from a list. */
+  it("sends the author somewhere after deleting", async () => {
+    mockGetPostById.mockResolvedValue(privatePost);
+    mockGetSession.mockResolvedValue({ data: { user: { id: "author-1" } } });
+
+    render(await renderPage("7"));
+
+    expect(screen.getByTestId("delete-btn")).toHaveAttribute("data-redirect", "/dashboard");
+  });
+
+  it("shows neither action to a reader who didn't write it", async () => {
+    mockGetPostById.mockResolvedValue(publicPost);
+    mockGetSession.mockResolvedValue({ data: { user: { id: "someone-else" } } });
+
+    render(await renderPage("7"));
+
+    expect(screen.queryByRole("link", { name: /Edit this post/ })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("delete-btn")).not.toBeInTheDocument();
+  });
+
+  it("shows neither action to an anonymous visitor", async () => {
+    mockGetPostById.mockResolvedValue(publicPost);
+
+    render(await renderPage("7"));
+
+    expect(screen.queryByRole("link", { name: /Edit this post/ })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("delete-btn")).not.toBeInTheDocument();
   });
 
   it("returns notFound when the post does not exist", async () => {

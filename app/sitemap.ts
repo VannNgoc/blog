@@ -13,6 +13,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     { url: BASE_URL, changeFrequency: "daily", priority: 1 },
     { url: `${BASE_URL}/posts`, changeFrequency: "daily", priority: 0.8 },
+    // The archive links every public post from one page, which gives crawlers a
+    // complete index without walking the paginated feed.
+    { url: `${BASE_URL}/archive`, changeFrequency: "daily", priority: 0.7 },
     ...pages.flat().map((post) => ({
       url: `${BASE_URL}/posts/${post.id}`,
       lastModified: post.post_edit_date ?? post.post_date,

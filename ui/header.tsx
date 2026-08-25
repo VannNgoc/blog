@@ -48,7 +48,7 @@ export default function Header() {
     >
       <Link
         href="/"
-        className="text-2xl font-medium tracking-wider text-zinc-50 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300"
+        className="text-2xl font-medium tracking-wider text-zinc-50 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300"
       >
         recollections{" "}
         <Suspense fallback={null}>

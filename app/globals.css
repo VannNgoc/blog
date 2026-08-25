@@ -66,12 +66,42 @@
   /* Inverted-contrast fill (dark in light mode, light in dark mode) so the
      primary action reads as "filled" against either theme, matching the
      active pagination button's treatment instead of standing out in blue. */
-  @apply inline-flex items-center justify-center min-h-10 px-6 py-2 rounded-md bg-zinc-800 text-white hover:bg-zinc-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--muted-foreground) dark:bg-zinc-200 dark:text-zinc-900 dark:hover:bg-zinc-300;
+  @apply inline-flex items-center justify-center min-h-10 px-6 py-2 rounded-md bg-zinc-800 text-white hover:bg-zinc-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-muted-foreground dark:bg-zinc-200 dark:text-zinc-900 dark:hover:bg-zinc-300;
+}
+
+/* Row actions that fade in on hover — but only where hovering exists.
+ *
+ * A touch device never fires hover, so `opacity-0` + `group-hover` would leave
+ * edit and delete permanently invisible and unreachable on a phone. Keying off
+ * `(hover: hover)` rather than a width breakpoint means the decision follows the
+ * input device: a narrow desktop window still gets the reveal, a large tablet
+ * doesn't. Same reasoning as the view-transition rules further down this file.
+ */
+.hover-reveal {
+  opacity: 1;
+}
+
+@media (hover: hover) {
+  .hover-reveal {
+    opacity: 0;
+    transition: opacity 150ms ease;
+  }
+
+  .group:hover .hover-reveal,
+  .hover-reveal:focus-within {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hover-reveal {
+    transition: none;
+  }
 }
 
 .btn-cancel {
   /* Explicit text/background so inherited body color never clashes (e.g. light text on gray-200 in dark mode). */
-  @apply inline-flex items-center justify-center min-h-10 px-6 py-2 rounded-md bg-zinc-200 text-zinc-900 hover:bg-zinc-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--muted-foreground) dark:bg-zinc-700 dark:text-zinc-50 dark:hover:bg-zinc-600;
+  @apply inline-flex items-center justify-center min-h-10 px-6 py-2 rounded-md bg-zinc-200 text-zinc-900 hover:bg-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-muted-foreground dark:bg-zinc-700 dark:text-zinc-50 dark:hover:bg-zinc-600;
 }
 
 }

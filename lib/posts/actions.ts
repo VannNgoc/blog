@@ -175,6 +175,8 @@ export async function deletePostAction(formData: FormData) {
   await deletePostById(id);
   revalidatePath("/posts");
   revalidatePath(`/posts/${id}`);
+  revalidatePath("/dashboard");
+  revalidatePath("/archive");
 
   if (pathnames.length > 0) {
     // Best-effort: the post row is already gone, so a storage cleanup failure
@@ -182,5 +184,15 @@ export async function deletePostAction(formData: FormData) {
     await del(pathnames).catch((error) => {
       console.error("Failed to delete post images:", error);
     });
+  }
+
+  // Deleting from a list leaves you on that list, so the caller says nothing
+  // and this returns. Deleting from the post's own page would strand you on a
+  // route whose post no longer exists, so that caller passes somewhere to go.
+  // `redirect` throws, which is why it runs last — after the row and its images
+  // are already gone.
+  const redirectTo = formData.get("redirectTo");
+  if (typeof redirectTo === "string" && redirectTo) {
+    redirect(safeRedirect(redirectTo, "/posts"));
   }
 }
