@@ -177,6 +177,46 @@ describe("/api/file access control", () => {
     expect(res.status).toBe(404);
   });
 
+  /** S1 from the audit: /api/upload stored a browser-declared content type
+      unchecked, /api/file echoed it back, and Route Handlers are excluded from
+      the middleware matcher so the response carried no CSP. Together that let
+      an authenticated user serve executable HTML from this origin. */
+  it("refuses to echo back a non-image content type", async () => {
+    mockGetPostById.mockResolvedValue(post(ACCESS_PUBLIC));
+    mockGet.mockResolvedValue({
+      statusCode: 200,
+      stream: "binary",
+      blob: { contentType: "text/html" },
+    });
+
+    const res = await GET(request({ postId: 7 }));
+
+    expect(res.headers.get("Content-Type")).toBe("application/octet-stream");
+    expect(res.headers.get("Content-Disposition")).toBe("attachment");
+  });
+
+  it("sends a sandbox CSP, since middleware never reaches this route", async () => {
+    mockGetPostById.mockResolvedValue(post(ACCESS_PUBLIC));
+
+    const res = await GET(request({ postId: 7 }));
+
+    expect(res.headers.get("Content-Security-Policy")).toBe("sandbox");
+  });
+
+  it("passes an allowlisted image type through untouched", async () => {
+    mockGetPostById.mockResolvedValue(post(ACCESS_PUBLIC));
+    mockGet.mockResolvedValue({
+      statusCode: 200,
+      stream: "binary",
+      blob: { contentType: "image/webp" },
+    });
+
+    const res = await GET(request({ postId: 7 }));
+
+    expect(res.headers.get("Content-Type")).toBe("image/webp");
+    expect(res.headers.get("Content-Disposition")).toBeNull();
+  });
+
   it("rejects a request with no pathname", async () => {
     expect((await GET(request({ pathname: "" }))).status).toBe(400);
   });

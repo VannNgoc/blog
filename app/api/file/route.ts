@@ -3,7 +3,7 @@ import { get } from "@vercel/blob"
 import { auth } from "@/lib/auth/server"
 import { getPostById } from "@/lib/posts/queries"
 import { postReferencesPathname } from "@/lib/tiptap-utils"
-import { ACCESS_PUBLIC } from "@/lib/constants"
+import { ACCESS_PUBLIC, ALLOWED_IMAGE_TYPES } from "@/lib/constants"
 
 export async function GET(request: NextRequest) {
   const pathname = request.nextUrl.searchParams.get("pathname")
@@ -64,11 +64,30 @@ export async function GET(request: NextRequest) {
     ? "public, max-age=31536000, s-maxage=31536000, immutable"
     : "private, max-age=31536000, immutable"
 
-  return new NextResponse(result.stream, {
-    headers: {
-      "Content-Type": result.blob.contentType,
-      "X-Content-Type-Options": "nosniff",
-      "Cache-Control": cacheControl,
-    },
-  })
+  // Never echo the stored content type back unchecked. Uploads are allowlisted
+  // now, but blobs stored before that rule still carry whatever the browser
+  // claimed at the time, and this route is the only thing standing between
+  // those bytes and a same-origin render. Anything unrecognised is served as an
+  // opaque download instead of something the browser will try to execute.
+  const storedType = result.blob.contentType
+  const isAllowedImage = ALLOWED_IMAGE_TYPES.has(storedType)
+
+  const headers: Record<string, string> = {
+    "Content-Type": isAllowedImage ? storedType : "application/octet-stream",
+    // `nosniff` stops the browser *guessing* a type; it does nothing about a
+    // type that was declared outright, which is why the allowlist above is the
+    // actual control and this is only a second layer.
+    "X-Content-Type-Options": "nosniff",
+    // Route Handlers are excluded from the middleware matcher, so responses
+    // from here carry no CSP at all. `sandbox` gives this one a policy of its
+    // own: an opaque origin with scripts disabled, so even a blob that somehow
+    // renders as a document can't reach this site's cookies or DOM.
+    "Content-Security-Policy": "sandbox",
+    "Cache-Control": cacheControl,
+  }
+  if (!isAllowedImage) {
+    headers["Content-Disposition"] = "attachment"
+  }
+
+  return new NextResponse(result.stream, { headers })
 }
