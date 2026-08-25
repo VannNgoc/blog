@@ -3,7 +3,7 @@ import { authClient } from '@/lib/auth/client';
 import { guardedExit } from '@/lib/unsaved-changes';
 
 const defaultClassName =
-    "text-left underline-offset-4 hover:underline hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300";
+    "text-left underline-offset-4 hover:underline hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300";
 
 /** `className` overrides the default styling entirely — the mobile dropdown
     renders this as a touch-sized row, the desktop nav as an inline link. */

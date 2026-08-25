@@ -106,7 +106,7 @@ export function PostCadence({ months, activeMonths = [], monthHref }: PostCadenc
                   // rather than filter/clear — otherwise a second selection reads
                   // as if it will discard the first.
                   aria-label={`${isActive ? "Remove" : "Add"} ${label} ${year} (${m.count} ${noun})`}
-                  className="group flex w-full flex-col items-center gap-1 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--muted-foreground)"
+                  className="group flex w-full flex-col items-center gap-1 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-muted-foreground"
                 >
                   {column}
                 </Link>

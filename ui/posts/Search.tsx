@@ -97,14 +97,14 @@ export function Search() {
                 type="text"
                 value={searchValue}
                 onChange={handleSearch}
-                className="w-full rounded-md border border-(--border-subtle) bg-white py-2 pl-9 pr-8 text-sm text-foreground shadow-sm transition placeholder:text-(--muted-foreground) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--muted-foreground) dark:bg-zinc-900"
+                className="w-full rounded-md border border-(--border-subtle) bg-white py-2 pl-9 pr-8 text-sm text-foreground shadow-sm transition placeholder:text-(--muted-foreground) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-muted-foreground dark:bg-zinc-900"
             />
             {searchValue && (
                 <button
                     type="button"
                     onClick={handleClear}
                     aria-label="Clear search"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-(--muted-foreground) transition hover:bg-zinc-100 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--muted-foreground) dark:hover:bg-zinc-800"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-(--muted-foreground) transition hover:bg-zinc-100 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-muted-foreground dark:hover:bg-zinc-800"
                 >
                     <svg
                         className="h-3.5 w-3.5"

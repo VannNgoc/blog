@@ -50,8 +50,8 @@ export function DeletePostConfirmButton({
         onClick={() => setOpen(true)}
         className={
           label
-            ? "inline-flex items-center gap-1.5 text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-red-600 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--muted-foreground) dark:hover:text-red-400"
-            : "inline-flex items-center text-red-600 hover:text-red-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--muted-foreground) dark:text-red-400 dark:hover:text-red-300"
+            ? "inline-flex items-center gap-1.5 text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-red-600 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-muted-foreground dark:hover:text-red-400"
+            : "inline-flex items-center text-red-600 hover:text-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-muted-foreground dark:text-red-400 dark:hover:text-red-300"
         }
         aria-label={label ? undefined : "Delete"}
       >

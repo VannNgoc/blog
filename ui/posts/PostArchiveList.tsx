@@ -73,7 +73,7 @@ export function PostArchiveList({ posts, showAccess = false, showActions = false
                         <Link
                           href={`/posts/${post.id}`}
                           transitionTypes={["nav-forward"]}
-                          className="min-w-0 flex-1 break-words leading-6 text-foreground underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--muted-foreground)"
+                          className="min-w-0 flex-1 break-words leading-6 text-foreground underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-muted-foreground"
                         >
                           {post.post_name.trim()}
                         </Link>

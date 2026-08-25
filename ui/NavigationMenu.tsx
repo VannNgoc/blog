@@ -10,7 +10,7 @@ import SignOutButton from './SignOutButton';
    font, so the menu keeps its proportions. A hover/active fill replaces the
    underline, since underline is a mouse affordance that touch never sees. */
 const mobileItemClass =
-    "flex min-h-11 w-full items-center whitespace-nowrap rounded-md px-3 py-2 text-zinc-100 transition-colors hover:bg-zinc-700 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300";
+    "flex min-h-11 w-full items-center whitespace-nowrap rounded-md px-3 py-2 text-zinc-100 transition-colors hover:bg-zinc-700 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300";
 
 export function NavigationMenu({ isSignedIn }: { isSignedIn: boolean }){
     const [isOpen, setIsOpen] = useState(false);
@@ -34,18 +34,18 @@ export function NavigationMenu({ isSignedIn }: { isSignedIn: boolean }){
         <div className='navigation-menu' ref={menuRef}>
             {/* //desktop/tablet menu */}
             <nav className="text-zinc-100 hidden md:flex md:items-center md:gap-4">
-                {isSignedIn ? <Link href="/dashboard" className="underline-offset-4 hover:underline hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300">Dashboard</Link> : null}
-                {isSignedIn ? <Link href="/drafts" className="underline-offset-4 hover:underline hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300">Drafts</Link> : null}
-                <Link href="/posts" className="underline-offset-4 hover:underline hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300">Shared Posts</Link>
-                <Link href="/archive" className="underline-offset-4 hover:underline hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300">Archive</Link>
-                {isSignedIn ? <SignOutButton /> : <Link href="/auth/sign-in" className="underline-offset-4 hover:underline hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300">Login</Link>}
+                {isSignedIn ? <Link href="/dashboard" className="underline-offset-4 hover:underline hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300">Dashboard</Link> : null}
+                {isSignedIn ? <Link href="/drafts" className="underline-offset-4 hover:underline hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300">Drafts</Link> : null}
+                <Link href="/posts" className="underline-offset-4 hover:underline hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300">Shared Posts</Link>
+                <Link href="/archive" className="underline-offset-4 hover:underline hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300">Archive</Link>
+                {isSignedIn ? <SignOutButton /> : <Link href="/auth/sign-in" className="underline-offset-4 hover:underline hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300">Login</Link>}
             </nav>
             {/* //mobile menu */}
             <button
                 /* `after:-inset-1.5` is an invisible 44px touch target over this
                    32px button — see the same treatment on ThemeToggle. It keeps
                    the header's height unchanged on phones. */
-                className="relative md:hidden rounded-md p-1.5 text-zinc-100 transition after:absolute after:-inset-1.5 after:content-[''] hover:bg-zinc-700 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300"
+                className="relative md:hidden rounded-md p-1.5 text-zinc-100 transition after:absolute after:-inset-1.5 after:content-[''] hover:bg-zinc-700 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300"
                 onClick={handleClick}
                 aria-label={isOpen ? "Close menu" : "Open menu"}
             >
