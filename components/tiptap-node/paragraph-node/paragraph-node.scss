@@ -33,10 +33,15 @@
   outline: none;
   caret-color: var(--tt-cursor-color);
 
-  // Paragraph spacing
+  // Paragraph spacing — and *only* spacing, despite what this rule used to do.
+  //
+  // It also restated font-size and line-height, which quietly overrode the
+  // container's type scale. Because it's scoped to `:not(:first-child)`, the
+  // effect was a post whose opening paragraph rendered at the container size
+  // and every paragraph after it one step smaller. The `:not(:first-child)`
+  // targeting exists so the first paragraph gets no leading gap; it was never
+  // meant to carve out a different type size.
   p:not(:first-child):not(td p):not(th p) {
-    font-size: 1rem;
-    line-height: 1.6;
     font-weight: normal;
     margin-top: 20px;
   }

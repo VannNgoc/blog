@@ -461,7 +461,12 @@ export function SimpleEditor({
   }
 
   return (
-    <div className="simple-editor-wrapper">
+    // The editable editor *is* the whole page on /posts/create and
+    // /posts/[id]/edit, so it carries the main landmark and the skip-link
+    // target. The read-only branch above deliberately does not — there it
+    // renders inside the post page's own <main>, and a second one would be
+    // both a duplicate id and a nested landmark.
+    <main id="main-content" className="simple-editor-wrapper">
       <EditorContext.Provider value={{ editor }}>
         <Toolbar
           ref={toolbarRef}
@@ -537,6 +542,6 @@ export function SimpleEditor({
           onKeepEditing={keepEditing}
         />
       </EditorContext.Provider>
-    </div>
+    </main>
   )
 }

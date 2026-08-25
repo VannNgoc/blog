@@ -5,7 +5,6 @@ import { CreatePostButton } from "@/ui/posts/createPostButton";
 import {PostsNavBar} from "@/ui/posts/PostsNavBar";
 import { Search } from "@/ui/posts/Search";
 import { auth } from '@/lib/auth/server';
-import { BlurFade } from "@/components/magicui/blur-fade";
 import { NavTransition } from "@/ui/NavTransition";
 
 export const dynamic = 'force-dynamic';
@@ -48,9 +47,12 @@ export default async function PostsPage({ searchParams }: { searchParams: Promis
                 Capping at the third card keeps the cascade legible where the
                 eye actually lands while bounding the delay at 0.14s. */}
             {posts.map((p, i) => (
-              <BlurFade key={p.id} delay={Math.min(i, 2) * 0.07} yOffset={4}>
-                <PostCard post={p} isAuthor={p.post_author === session?.user.id}/>
-              </BlurFade>
+              <PostCard
+                key={p.id}
+                post={p}
+                isAuthor={p.post_author === session?.user.id}
+                delay={Math.min(i, 2) * 0.07}
+              />
             ))}
           </ul>
         )}

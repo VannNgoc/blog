@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import type { PostWithAuthorRow } from "@/type/post";
 import { tiptapFirstBlockText } from "@/lib/tiptap-content";
 import { ACCESS_DRAFT } from "@/lib/constants";
@@ -8,13 +9,18 @@ import { EditButton } from "@/ui/posts/EditButton";
 type PostCardProps = {
   post: PostWithAuthorRow;
   isAuthor: boolean;
+  /** Seconds to hold this card at opacity 0 before it fades in. Applied to the
+      `<li>` itself rather than a wrapper: a `<BlurFade>` around the card put a
+      `<div>` between the `<ul>` and its `<li>`, which is invalid list markup —
+      assistive tech stops treating the children as list items. */
+  delay?: number;
   /** Show a Public/Private badge next to the date. Only meaningful where the
       list can contain a mix of both (the signed-in dashboard) — the public
       feed is always public, so it stays off there by default. */
   showAccessBadge?: boolean;
 };
 
-export function PostCard({ post, isAuthor, showAccessBadge = false }: PostCardProps) {
+export function PostCard({ post, isAuthor, showAccessBadge = false, delay }: PostCardProps) {
   // Prefer the author's description; fall back to the post's opening block.
   const preview = post.post_description?.trim() || tiptapFirstBlockText(post.post_body_json);
   const isPrivate = post.access !== 1;
@@ -24,7 +30,9 @@ export function PostCard({ post, isAuthor, showAccessBadge = false }: PostCardPr
   const href = isDraft ? `/posts/${post.id}/edit` : `/posts/${post.id}`;
 
   return (
-    <li className={`relative rounded-lg border p-4 transition-all hover:border-l-zinc-800 hover:bg-zinc-50 dark:hover:border-l-zinc-400 dark:hover:bg-zinc-900 group ${isDraft ? "border-dashed border-zinc-300 border-l-4 border-l-zinc-300 dark:border-zinc-600 dark:border-l-zinc-600" : "border-zinc-200 border-l-4 border-l-zinc-200 dark:border-zinc-700 dark:border-l-zinc-700"}`}>
+    <li
+      style={delay === undefined ? undefined : ({ "--bf-delay": `${delay}s`, "--bf-y": "4px" } as CSSProperties)}
+      className={`${delay === undefined ? "" : "blur-fade "}relative rounded-lg border p-4 transition-all hover:border-l-zinc-800 hover:bg-zinc-50 dark:hover:border-l-zinc-400 dark:hover:bg-zinc-900 group ${isDraft ? "border-dashed border-zinc-300 border-l-4 border-l-zinc-300 dark:border-zinc-600 dark:border-l-zinc-600" : "border-zinc-200 border-l-4 border-l-zinc-200 dark:border-zinc-700 dark:border-l-zinc-700"}`}>
       <Link href={href} transitionTypes={["nav-forward"]} className="block">
         <div className="flex justify-between items-start mb-2">
           <h2 className="text-lg font-medium text-foreground">{post.post_name}</h2>
