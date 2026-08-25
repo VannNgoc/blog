@@ -2,7 +2,7 @@ import "server-only";
 import { sql } from "@/lib/db";
 import type { PostRow, PostWithAuthorRow } from "@/type/post";
 
-import { ACCESS_DRAFT, PAGINATION_LIMIT } from '@/lib/constants'
+import { ACCESS_DRAFT, ACCESS_PRIVATE, ACCESS_PUBLIC, PAGINATION_LIMIT } from '@/lib/constants'
 
 export async function getPostsCount({ isPublic }: { isPublic: boolean }){
   const [{ count }] = isPublic
@@ -30,6 +30,117 @@ export async function getPosts(userID: string | undefined, currentPage: number) 
     LIMIT ${PAGINATION_LIMIT} OFFSET ${(currentPage - 1) * PAGINATION_LIMIT}
   `) as PostWithAuthorRow[];
   return posts;
+}
+
+/** Every public post, titles and dates only, newest first.
+ *
+ *  Unpaginated on purpose — seeing the whole run at once is the point of an
+ *  archive, and the payload is three columns per row rather than a post body.
+ *  Note what this deliberately does *not* select: `post_body_json`. The other
+ *  listing queries pull whole bodies to derive a one-paragraph preview, which
+ *  is fine at ten rows a page and would not be fine across every post at once.
+ *
+ *  Public posts only, matching /posts. An author's private work has its own
+ *  home on the dashboard, so this needs no access parameter and no session. */
+export async function getPublicPostArchive() {
+  const posts = (await sql`
+    SELECT p.id, p.post_name, p.post_date
+    FROM "POSTS" AS p
+    WHERE p.access = ${ACCESS_PUBLIC}
+    ORDER BY post_date DESC, id DESC
+  `) as Pick<PostRow, "id" | "post_name" | "post_date">[];
+  return posts;
+}
+
+/** Filters the dashboard archive can apply, all optional and all combinable. */
+export type ArchiveFilters = {
+  /** A single ACCESS_* value. Omitted means "everything except drafts" — they
+      are unfinished work and have their own page, so they stay out unless
+      explicitly asked for. */
+  access?: number;
+  /** Any number of "YYYY-MM" months, unioned. Matched against post_date, which
+      is a DATE with no zone, so formatting it in SQL avoids the local-vs-UTC
+      shift a JS Date would introduce. */
+  months?: string[];
+  /** Full-text search, sharing the public feed's match rules. */
+  q?: string;
+};
+
+/** Everything an author has published or kept private, titles and dates only.
+ *
+ *  The dashboard's counterpart to getPublicPostArchive: scoped to one author
+ *  and carrying `access` so each row can show its state. Unpaginated on
+ *  purpose — filtering a paginated index would hide matches below a page
+ *  boundary, which is the opposite of what someone filtering wants.
+ *
+ *  Every filter is composed as a fragment defaulting to TRUE, so the shape of
+ *  the query never changes with the combination applied to it. */
+export async function getUserPostArchive(userID: string, filters: ArchiveFilters = {}) {
+  const accessFilter =
+    filters.access !== undefined
+      ? sql`p.access = ${filters.access}`
+      : sql`p.access != ${ACCESS_DRAFT}`;
+
+  // `= ANY(array)` rather than a generated IN list: one bound parameter whatever
+  // the selection size, so the query plan is identical for one month or twelve.
+  const monthFilter = filters.months?.length
+    ? sql`to_char(p.post_date, 'YYYY-MM') = ANY(${filters.months})`
+    : sql`TRUE`;
+
+  const searchFilter = filters.q ? searchMatchFilter(filters.q, userID) : sql`TRUE`;
+
+  const posts = (await sql`
+    SELECT p.id, p.post_name, p.post_date, p.access
+    FROM "POSTS" AS p
+    WHERE p.post_author = ${userID}
+      AND ${accessFilter}
+      AND ${monthFilter}
+      AND ${searchFilter}
+    ORDER BY post_date DESC, id DESC
+  `) as (Pick<PostRow, "id" | "post_name" | "post_date"> & { access: number })[];
+  return posts;
+}
+
+/** The three numbers the dashboard leads with, in one round trip rather than
+ *  three. FILTER is doing the work a WHERE can't here — one pass, three counts. */
+export async function getUserPostCounts(userID: string) {
+  const [row] = await sql`
+    SELECT
+      COUNT(*) FILTER (WHERE access = ${ACCESS_PUBLIC})  AS published,
+      COUNT(*) FILTER (WHERE access = ${ACCESS_PRIVATE}) AS private,
+      COUNT(*) FILTER (WHERE access = ${ACCESS_DRAFT})   AS drafts
+    FROM "POSTS"
+    WHERE post_author = ${userID}
+  `;
+  return {
+    published: Number(row.published),
+    private: Number(row.private),
+    drafts: Number(row.drafts),
+  };
+}
+
+/** Posts per calendar month for the last `months` months, oldest first.
+ *
+ *  A generated series left-joined against the posts, so months with nothing in
+ *  them come back as zero rather than being missing — otherwise a gap in the
+ *  writing habit would render as a shorter strip instead of an empty column,
+ *  which is precisely the thing worth seeing. */
+export async function getUserPostCadence(userID: string, months = 12) {
+  const rows = (await sql`
+    SELECT to_char(m.month, 'YYYY-MM') AS month, COUNT(p.id) AS count
+    FROM generate_series(
+      date_trunc('month', CURRENT_DATE) - make_interval(months => ${months - 1}),
+      date_trunc('month', CURRENT_DATE),
+      '1 month'
+    ) AS m(month)
+    LEFT JOIN "POSTS" AS p
+      ON date_trunc('month', p.post_date) = m.month
+     AND p.post_author = ${userID}
+     AND p.access != ${ACCESS_DRAFT}
+    GROUP BY m.month
+    ORDER BY m.month
+  `) as { month: string; count: string }[];
+  return rows.map((r) => ({ month: r.month, count: Number(r.count) }));
 }
 
 /** The dashboard is the author's own shelf: their published and private posts.

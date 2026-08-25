@@ -166,6 +166,36 @@ describe("deletePostAction", () => {
     expect(mockRevalidatePath).toHaveBeenCalledWith("/posts");
   });
 
+  /** Deleting from a list leaves you on that list, so no destination is given
+      and none should be invented. */
+  it("stays put when no destination is given", async () => {
+    mockSql.mockResolvedValueOnce([mockPost]).mockResolvedValueOnce([{ id: 5 }]);
+
+    await deletePostAction(makeFormData({ id: "42" }));
+
+    expect(mockRedirect).not.toHaveBeenCalled();
+  });
+
+  /** Deleting from the post's own page destroys the route you're standing on,
+      so that caller passes somewhere to land. */
+  it("redirects when the caller supplies a destination", async () => {
+    mockSql.mockResolvedValueOnce([mockPost]).mockResolvedValueOnce([{ id: 5 }]);
+
+    await deletePostAction(makeFormData({ id: "42", redirectTo: "/dashboard" }));
+
+    expect(mockRedirect).toHaveBeenCalledWith("/dashboard");
+  });
+
+  /** `redirectTo` arrives from a form field, so it goes through the same
+      open-redirect guard as every other redirect in this file. */
+  it("refuses to be sent off-site by a tampered destination", async () => {
+    mockSql.mockResolvedValueOnce([mockPost]).mockResolvedValueOnce([{ id: 5 }]);
+
+    await deletePostAction(makeFormData({ id: "42", redirectTo: "https://evil.example.com" }));
+
+    expect(mockRedirect).toHaveBeenCalledWith("/posts");
+  });
+
   it("should throw an error if id is invalid", async () => {
     const formData = makeFormData({ id: "not-a-number" });
 

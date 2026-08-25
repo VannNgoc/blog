@@ -9,6 +9,7 @@ import { auth } from '@/lib/auth/server'
 import { withPostImageUrls } from '@/lib/tiptap-utils'
 import { ACCESS_DRAFT, ACCESS_PUBLIC } from '@/lib/constants'
 import { NavTransition } from '@/ui/NavTransition'
+import { DeletePostConfirmButton } from '@/ui/posts/DeletePostConfirmationButton'
 
 // De-duped per request (React's cache()) so generateMetadata and the page
 // body share one DB round trip instead of each fetching the post separately.
@@ -68,6 +69,7 @@ export default async function Page({
   // (/posts/[id]/edit) is the only way in.
   if (post.access === ACCESS_DRAFT) notFound();
   if (post.access !== 1 && post.post_author !== userID) notFound();
+  const isAuthor = post.post_author === userID;
   const { newer, older } = await getAdjacentPosts({ id: post.id, post_date: post.post_date, user_id: userID });
 
   return (
@@ -84,9 +86,33 @@ export default async function Page({
           heading at all — every other route has one. Lighthouse doesn't catch
           it, because `heading-order` only flags *skipped* levels, not a
           missing h1. Styling is unchanged; only the semantics move. */}
-      <h1 className="text-4xl mt-2 tracking-wider text-foreground">{post.post_name}</h1>
+      <h1 className="text-4xl my-2 tracking-wider text-foreground">{post.post_name}</h1>
       <p className="text-muted-foreground">{post.username}</p>
       <p className="text-muted-foreground">{new Date(post.post_date).toLocaleDateString()}</p>
+
+      {/* Author actions, on the post itself.
+          Editing used to mean leaving the post, finding it again in a list and
+          paging to it — the one place you're certain you want to change
+          something is while you're reading it.
+
+          This is also where deleting lives now, rather than on every row of a
+          dense index: here you can see exactly what you're about to destroy.
+          The delete carries a destination because the page it's on is about to
+          stop existing. */}
+      {isAuthor && (
+        <div className="mt-4 flex items-center justify-center gap-5">
+          <Link
+            href={`/posts/${post.id}/edit`}
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--muted-foreground)"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 shrink-0" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+            </svg>
+            Edit this post
+          </Link>
+          <DeletePostConfirmButton id={post.id} redirectTo="/dashboard" label="Delete post" />
+        </div>
+      )}
     </div>
     <hr className="my-4 border-zinc-200 dark:border-zinc-700"/>
 
