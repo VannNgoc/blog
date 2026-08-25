@@ -112,6 +112,59 @@
   animation-delay: var(--bf-delay, 0s);
 }
 
+/* Character-by-character reveal for the landing hero (see TypingAnimation).
+
+   Deliberately fail-safe: the base rule leaves the text fully visible and the
+   keyframes animate *in* from `max-width: 0`. If a browser can't parse the
+   `steps(var(--typing-steps))` timing function the whole shorthand is dropped,
+   and the heading simply renders complete rather than staying clipped to zero
+   width forever. */
+@keyframes typing {
+  from {
+    max-width: 0;
+  }
+  to {
+    max-width: 100%;
+  }
+}
+
+/* The caret is the element's right border, so it needs no extra node and can't
+   shift the text. `caretOff` is listed last and delayed by exactly the typing
+   duration: until it starts it isn't applying (no `backwards` fill), so the
+   blink shows through; once it does, `forwards` holds the caret hidden. */
+@keyframes caretBlink {
+  50% {
+    border-right-color: transparent;
+  }
+}
+
+@keyframes caretOff {
+  to {
+    border-right-color: transparent;
+  }
+}
+
+.typing {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  vertical-align: bottom;
+  border-right: 1px solid currentColor;
+  animation:
+    typing var(--typing-duration, 1.2s) steps(var(--typing-steps, 13)) both,
+    caretBlink 0.75s step-end infinite,
+    caretOff 1ms linear var(--typing-duration, 1.2s) forwards;
+}
+
+/* Readers who ask for less motion get the finished heading, no clip, no caret
+   blinking indefinitely in their peripheral vision. */
+@media (prefers-reduced-motion: reduce) {
+  .typing {
+    border-right-color: transparent;
+    animation: none;
+  }
+}
+
 @keyframes shimmer {
   100% {
     transform: translateX(100%);

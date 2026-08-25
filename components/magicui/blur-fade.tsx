@@ -1,7 +1,12 @@
-"use client";
 import { cn } from "@/lib/utils";
 import { CSSProperties, ReactNode } from "react";
 
+/**
+ * Fades its children in via CSS (see `.blur-fade`) — no hooks, no effects, so
+ * it deliberately has no "use client": on server-rendered pages it adds nothing
+ * to the client bundle, and the sign-in/sign-up pages that are already client
+ * components bundle it exactly as before.
+ */
 interface BlurFadeProps {
   children: ReactNode;
   className?: string;

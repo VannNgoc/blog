@@ -73,10 +73,33 @@ describe("PostContent", () => {
     wrappers.forEach((wrapper) => {
       expect(wrapper.getAttribute("data-loaded")).toBe("false")
       expect(wrapper.querySelector(".tiptap-image-node-skeleton")).toBeInTheDocument()
-      expect(wrapper.querySelector("img")).toHaveClass("tiptap-image-node-hidden")
     })
 
     const eagerWrapper = wrappers[0]
     expect(eagerWrapper.getAttribute("style")).toContain("aspect-ratio: 800 / 600")
+  })
+
+  /** The regression guard for post-page LCP. `tiptap-image-node-hidden` is
+      `opacity: 0`, and only a client-side effect ever removed it — so emitting
+      it here made every image wait for the bundle to download and hydrate
+      before it could paint, and an element at `opacity: 0` cannot be a Largest
+      Contentful Paint candidate at all. The skeleton shares the image's grid
+      cell, so the placeholder still shows until the image decodes. */
+  it("never hides reader-facing images behind a class only JavaScript can remove", () => {
+    const { container } = render(<PostContent content={docWithImages()} />)
+
+    container.querySelectorAll<HTMLImageElement>(".tiptap-image-node img").forEach((img) => {
+      expect(img).not.toHaveClass("tiptap-image-node-hidden")
+    })
+  })
+
+  it("decodes below-the-fold images off the main thread, but leaves the LCP image alone", () => {
+    const { container } = render(<PostContent content={docWithImages()} />)
+    const imgs = container.querySelectorAll<HTMLImageElement>(".tiptap-image-node img")
+
+    // The eager image is the LCP candidate; forcing async decode on it can
+    // delay the very paint it is preloaded to win.
+    expect(imgs[0].getAttribute("decoding")).toBeNull()
+    expect(imgs[1].getAttribute("decoding")).toBe("async")
   })
 })
