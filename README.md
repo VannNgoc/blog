@@ -1,141 +1,150 @@
 # recollections
 
-A personal blog and reflection journal I built while between jobs — partly to document that time, partly to keep my engineering skills sharp, and partly because writing things down is the best way I know to make sense of them.
+A personal blog and reflection journal. Posts are **public**, **private**, or **drafts**, so the same app is both a public blog and a private journal — which is what makes the access model the interesting part rather than an afterthought.
 
-Posts can be **public** (shared on the blog) or **private** (visible only to the author), so the same app works as both a public blog and a personal journal.
+**Live:** [vann-recollections.vercel.app](https://vann-recollections.vercel.app/) · Next.js 16 · React 19 · Neon Postgres · ~5,100 lines of application code · 293 tests
 
 ![Posts feed](docs/screenshots/posts-list.png)
 
-![Post detail page](docs/screenshots/post-detail.png)
+---
 
-**Live site:** [vann-recollections.vercel.app](https://vann-recollections.vercel.app/)
+## What's actually interesting here
+
+Five decisions worth a look, each with the trade-off it cost.
+
+### 1. Access control is enforced in four places, not one
+
+A private post has to stay private through every door into it. So the check is repeated where the data is, rather than trusted once:
+
+- **Listing queries** filter by access level in SQL, so a private row never enters a result set.
+- **The post page** re-checks server-side, so URL guessing gets a 404 rather than a render.
+- **`generateMetadata`** mirrors the same checks — otherwise a private post leaks its title and description into `<head>` even when the body is hidden.
+- **`/api/file`** re-checks per image, and requires that the post *actually embeds that pathname* — not merely that you paired a real `postId` with some blob key.
+
+That last condition is the one that's easy to miss. Without it, any public post's id unlocks any file in storage.
+
+**Trade-off:** four places to keep in sync. `__tests__/file-route.test.ts` pins all of them, including the pairing attack.
+
+### 2. The editor's JS never reaches a reader
+
+Posts are stored as Tiptap JSON. The obvious way to display them is to mount the editor read-only — and that ships the entire editor to everyone who reads a post.
+
+Instead the read path renders through `@tiptap/static-renderer` on the server, so a reader gets HTML. Verified rather than assumed: fingerprinting the chunks a post page loads finds **zero** ProseMirror or Tiptap code.
+
+**Trade-off:** two schema definitions that must agree. A comment in `post-schema-extensions.ts` used to claim editor-only nodes could never reach a saved document. That was wrong — an abandoned image-upload placeholder persisted into a post and crashed the reader page, since the read-only schema has no extension for it. `stripEditorOnlyNodes` now removes them on both write and read, and `__tests__/post191.regression.test.tsx` runs against that post's real stored body.
+
+### 3. Removing a loading skeleton improved LCP by 861ms
+
+A root `app/loading.tsx` wraps *every* route in a Suspense boundary: the server flushes a skeleton, and the real content arrives as a second chunk React swaps in.
+
+Measured on `/posts/[id]`, Lighthouse mobile, five runs per arm, non-overlapping distributions:
+
+| | With skeleton | Without |
+|---|---|---|
+| LCP | 3223ms | **2362ms** |
+| FCP | 1057ms | **909ms** |
+| TTFB | ~0.30s | 0.47s |
+
+The skeleton didn't even paint sooner — FCP was 148ms *later* with it, because the extra render and DOM swap buy nothing on a cold load. Trading 150ms of TTFB (a metric with 800ms of headroom) for the two that were actually failing is a good deal.
+
+**Trade-off:** routes that genuinely benefit from streaming declare their own scoped `<Suspense>` — see `app/dashboard`, where a skeleton after a filter change is real feedback.
+
+**What this taught me:** a single Lighthouse run on this page resolves nothing under ~1s. An earlier 3-run comparison told me the opposite, and a port collision once had two "arms" unknowingly measuring the same server. Medians across five runs with a verified build in each, or don't bother.
+
+### 4. Search is a Postgres index, not a scan
+
+A trigger-maintained `tsvector` with a GIN index (`sql/add_search_vector.sql`), titles weighted above body text. The body is Tiptap JSON, so the trigger walks the document with `jsonb_path_query_array(..., '$.**.text')` to collect text at any depth — headings and list items stay searchable without hard-coding the schema.
+
+On the public feed a term also matches the author's name, via substring `ILIKE` rather than a second `tsquery`: names aren't English words, so stemming mangles them and whole-lexeme matching misses the partial name someone types into a debounced box.
+
+**Trade-off:** that half of the `OR` gives up the index. Correct at this size — folding usernames into the vector would mean re-syncing every one of an author's posts on rename.
+
+### 5. Filter state lives in the URL
+
+Search, pagination, and the dashboard's access/month filters are all query parameters. One data-fetching path, filtered views survive a refresh and can be linked, and the dashboard's stat cards and chart bars are plain `<Link>`s — **no client JavaScript for any of the filtering.**
+
+**Trade-off:** every filter change is a server round trip. Mitigated with `useTransition` on the search box, which surfaces a pending state ~541ms in rather than leaving the input silent.
+
+---
+
+## Measured, not claimed
+
+| | |
+|---|---|
+| Lighthouse accessibility | **100** on `/`, `/posts`, `/posts/[id]`, `/archive` |
+| Lighthouse SEO | **100** on the same routes |
+| Tests | **293** across 30 suites |
+| API route coverage | **100%** statements (`/api/file`, `/api/upload`) |
+| Text contrast | 14.2:1 primary, 7.8:1 secondary — both AAA |
+| Reading measure | 60 characters at desktop width |
+
+Contrast is deliberately *below* maximum. Near-black on white sits around 18:1, which overstimulates in light mode and causes halation in dark mode — glyphs appearing to bleed, worst for readers with astigmatism. 14:1 still clears AAA while stepping back from the extreme.
+
+---
 
 ## Features
 
-- **Email/password auth** via Neon Auth, with session-aware server components
-- **Post CRUD** — create, edit, and delete posts, with author-only authorization enforced server-side
-- **Public/private access levels** — private posts are filtered out of listings and fail closed on direct URL access
-- **Rich text editing** with Tiptap, including inline image uploads stored on Vercel Blob
-- **Full-text search** across post titles and bodies, backed by Postgres (`tsvector` + GIN index, title-weighted ranking) rather than a naive substring scan
-- **Pagination** on both the public feed and the personal dashboard, including search results
-- **Previous/next post navigation** ordered by post date
-- **Responsive navigation** — collapses to a mobile hamburger menu that auto-closes on outside touch/click
-- **Dark mode toggle** in the header, synced with OS preference on first visit and persisted across sessions
-- **Form validation** with shared Zod schemas, checked server-side in Server Actions
-- **Unit and component tests** with Jest and React Testing Library
+**Writing** — Tiptap rich text with inline image uploads; drafts; public/private/draft access levels; unsaved-changes guard covering three exit paths, including Sign Out (which destroys the session before navigating, so `beforeunload` is too late to save anything).
 
+**Reading** — paginated feed, full-text search, chronological archive grouped by month, prev/next navigation with keyboard shortcuts, view transitions between posts.
 
+**Managing** — a dashboard with published/private/draft counts, a twelve-month writing-cadence chart, and filtering by access level or any combination of months.
 
-## Tech stack
+**Platform** — email/password auth, per-request CSP nonce, security headers, upload rate limiting, and a nightly cron that deletes blob images no longer referenced by any post.
 
+---
 
-| Layer      | Choice                                                                                 |
-| ---------- | -------------------------------------------------------------------------------------- |
-| Framework  | [Next.js 16](https://nextjs.org) (App Router, React Server Components, Server Actions) |
-| UI         | React 19, Tailwind CSS 4, Radix UI & Floating UI (editor dropdowns/popovers/tooltips)  |
-| Database   | [Neon](https://neon.tech) serverless Postgres, queried with tagged-template SQL        |
-| Search     | Postgres full-text search (`tsvector`/`tsquery`, GIN index, trigger-maintained)        |
-| Storage    | Vercel Blob (post images)                                                              |
-| Auth       | Neon Auth (`@neondatabase/auth`)                                                       |
-| Validation | Zod 4 schemas, checked server-side inside Server Actions                              |
-| Testing    | Jest 30, React Testing Library                                                         |
-| Hosting    | Vercel, with Analytics and Speed Insights                                              |
+## Stack
 
+| Layer | Choice |
+|---|---|
+| Framework | Next.js 16 (App Router, RSC, Server Actions) |
+| UI | React 19, Tailwind 4, Radix UI (editor menus) |
+| Database | Neon serverless Postgres, tagged-template SQL — no ORM |
+| Search | Postgres FTS (`tsvector` + GIN, trigger-maintained) |
+| Storage | Vercel Blob, served through an access-checked route |
+| Auth | Neon Auth |
+| Validation | Zod 4, checked server-side inside Server Actions |
+| Testing | Jest 30, React Testing Library |
 
+No ORM was deliberate: at this size I wanted to stay close to the SQL rather than learn an abstraction over it. The cost is hand-written types in `type/post.ts` that the database doesn't enforce.
 
-
-## Architecture notes
-
-A few decisions I made deliberately:
-
-- **Server-first data access.** All queries and mutations live in `lib/` and are marked `server-only`, so database code can never leak into a client bundle. Pages are async server components that fetch directly.
-- **Server Actions over API routes, with two necessary exceptions.** Mutations (`lib/posts/actions.ts`) are Server Actions that validate input with Zod, check the session, verify authorship, and then call the data layer — keeping authorization next to the mutation it protects. Route Handlers exist only where a real URL is unavoidable: `/api/upload` (Tiptap's image upload needs a fetchable endpoint) and `/api/file` (serving private post images requires an access check before streaming the blob).
-- **Authorization at every entry point.** Listing queries filter by access level in SQL; the post detail and edit pages re-check access/authorship server-side, so private posts aren't reachable by URL guessing.
-- **Plain SQL over an ORM.** Queries use Neon's tagged-template driver directly. For an app this size I wanted to stay close to the SQL rather than learn an ORM's abstraction over it.
-- **Search and pagination live in the URL, not client state.** Both drive the same server-rendered query (`?q=`, `?page=`), so there's one data-fetching path, results are bookmarkable/shareable, and there's no separate client-side fetch/API route to keep in sync with the server-rendered list.
-- **No root `app/loading.tsx` — deliberately.** A root loading file wraps *every* route in a Suspense boundary, so the server flushes a skeleton and the real content arrives as a second chunk React has to swap in. Measured on `/posts/[id]` (Lighthouse mobile, 5 runs per arm, non-overlapping distributions): removing it moved LCP 3223ms → 2362ms and FCP 1057ms → 909ms, at a cost of ~150ms TTFB — a metric with 800ms of headroom, traded for the two that were actually failing. The skeleton didn't even paint sooner; FCP was 148ms *later* with it, because the extra render and DOM swap buy nothing on a first load. Routes that genuinely need a streaming boundary declare their own scoped `<Suspense>` (see `app/dashboard` and `app/drafts`), which keeps the skeleton where it helps — a re-fetch after search or pagination — without taxing every cold page load.
-- **Search runs in Postgres, not the app.** A trigger-maintained `tsvector` column plus a GIN index (`sql/add_search_vector.sql`) means matching is an indexed lookup, not an app-side scan that re-parses every post's content on every keystroke. On the public feed a term also matches the author's name, via a substring `ILIKE` rather than a second `tsquery`: names aren't english words, so stemming mangles them and whole-lexeme matching would miss the partial name someone types into a debounced box. That half of the `OR` gives up the index, which is the right trade at this size — folding usernames into the `tsvector` would mean re-syncing every one of an author's posts on rename.
-
-![Full-text search](docs/screenshots/search.png)
-
-
-
-## Project structure
-
-```
-app/          Routes (App Router): posts feed, post detail, create/edit, auth, dashboard
-ui/           Presentational components (PostCard, forms, header, ...)
-components/   Tiptap rich-text editor (vendored template) and landing-page effects
-hooks/        Shared client hooks (dark mode, throttling, editor helpers, ...)
-lib/          Data layer: SQL queries, server actions, auth helpers, db client
-schemas/      Zod schemas shared by forms and server actions
-type/         TypeScript row/input types for posts
-sql/          One-off SQL migrations run manually against Neon (no ORM/migration tool)
-__tests__/    Jest unit and component tests
-```
-
-
+---
 
 ## Running locally
 
-You'll need Node 20+ and a [Neon](https://neon.tech) project with Neon Auth enabled.
-
-1. Clone the repo and install dependencies:
-  ```bash
-   npm install
-  ```
-2. Create a `.env.local` file with your Neon credentials (the connection string and Neon Auth keys from the Neon console):
-  ```bash
-   DATABASE_URL=...
-   NEON_AUTH_BASE_URL=...
-   NEON_AUTH_COOKIE_SECRET=...
-   BLOB_READ_WRITE_TOKEN=...
-   CRON_SECRET=...
-  ```
-   `CRON_SECRET` authorizes the `/api/cron/cleanup-blobs` route, which Vercel Cron
-   calls daily (see `vercel.json`) to delete blob images no longer referenced by
-   any post — e.g. images uploaded while composing a post that was never saved,
-   or whose image was removed before the first save. Any random string works;
-   Vercel sets the same value as an `Authorization: Bearer` header when it
-   triggers the cron job. Not required for local dev unless you're testing the
-   route directly.
-3. Run the SQL migrations in `sql/` against your database (via the Neon console's SQL editor or `psql`) to set up full-text search.
-4. Start the dev server:
-  ```bash
-   npm run dev
-  ```
-   Then open [http://localhost:3000](http://localhost:3000).
-
-
-
-## Tests
+Node 20+ and a [Neon](https://neon.tech) project with Neon Auth enabled.
 
 ```bash
-npm test              # run the suite once
-npm run test:watch    # watch mode
-npm run test:coverage # with coverage report
+npm install
 ```
 
+Create `.env.local`:
 
+```bash
+DATABASE_URL=...
+NEON_AUTH_BASE_URL=...
+NEON_AUTH_COOKIE_SECRET=...
+BLOB_READ_WRITE_TOKEN=...
+CRON_SECRET=...            # any random string; authorizes /api/cron/cleanup-blobs
+```
 
-## Roadmap
+Run the migrations in `sql/` against your database, in order — `add_search_vector.sql` first (search returns nothing without it), then `add_not_null_constraints.sql`.
 
-**Done — rich text & media**
+```bash
+npm run dev
+npm test
+```
 
-- [x] Tiptap editor in the post form, replacing the plain textarea
-- [x] Store post content as structured Tiptap JSON and render it back through the same editor, read-only
-- [x] Image uploads in the editor, stored on Vercel Blob
+---
 
-**Done — discovery**
+## Known limitations
 
-- [x] Full-text search across posts (Postgres FTS: `tsvector` + GIN index, title/body weighted ranking)
+Things I'd fix next, listed because a project with no known problems usually means nobody looked.
 
-**Next**
-
-- [ ] Tags on posts — create, and filter the feed by tag
-- [ ] Public homepage surfacing recent posts
-
-**Later — reflection and reach**
-
-- [ ] Calendar/streak view for reflection
-- [ ] RSS feed + SEO/Open Graph metadata
+- **Images ship at capture resolution.** 3252 × 4336 originals — file sizes are fine (129–192 KB), the *dimensions* are not: a phone allocates a ~56 MB bitmap to decode one. Resizing at upload is the largest remaining performance win, deferred because it needs a backfill decision on existing posts.
+- **No index on the columns actually filtered.** `POSTS` has a primary key and the search GIN index; the dashboard filters on `post_author` and the feed on `access`, both sequential scans. Irrelevant at 60 rows, wrong before it's 6,000.
+- **Rate limiting is per-instance.** An in-memory `Map`, so it resets on cold start and isn't shared between serverless instances. Real protection needs Vercel's Firewall rules.
+- **`hooks/` is 20% covered.** The two that guard unsaved work are tested; `useMenuNavigation` isn't, because it's coupled to a live editor instance and needs scaffolding the others didn't.
+- **Vestigial schema.** A `COMMENTS` table with one row and no feature behind it, and two legacy columns superseded by `post_body_json`.
+- **Multi-author affordances the site doesn't use.** Author bylines and author-name search were built for a communal feed; in practice one person has written 60 of the 61 posts.
