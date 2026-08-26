@@ -75,9 +75,14 @@ export function PostCadence({ months, activeMonths = [], monthHref }: PostCadenc
                     style={{ height: `${pct}%` }}
                   />
                 ) : (
-                  // A month with nothing in it keeps a faint baseline so the
-                  // strip reads as a continuous timeline rather than a gap.
-                  <span className="h-0.5 w-full rounded-sm bg-zinc-200 dark:bg-zinc-800" />
+                  // A month with nothing in it keeps a baseline so the strip
+                  // reads as a continuous timeline rather than a gap. It has to
+                  // be *visible* to do that job: at zinc-800 on the dark ground
+                  // this sat ~12 points of lightness above the page at 2px tall,
+                  // which made five empty months look like missing data instead
+                  // of five months without a post. Still clearly recessive
+                  // against the zinc-500 bars, just no longer invisible.
+                  <span className="h-0.5 w-full rounded-sm bg-zinc-300 dark:bg-zinc-700" />
                 )}
               </span>
               {/* Three letters, not one: a lone "J" is ambiguous three times a
