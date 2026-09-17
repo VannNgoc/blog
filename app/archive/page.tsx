@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getPublicPostArchive } from "@/lib/posts/queries";
+import { getCachedPublicArchive } from "@/lib/posts/cached";
 import { PostArchiveList } from "@/ui/posts/PostArchiveList";
 import { NavTransition } from "@/ui/NavTransition";
 
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
  * visitor has nothing to edit.
  */
 export default async function ArchivePage() {
-  const posts = await getPublicPostArchive();
+  const posts = await getCachedPublicArchive();
 
   return (
     <NavTransition>

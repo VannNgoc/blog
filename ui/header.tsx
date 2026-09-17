@@ -1,13 +1,14 @@
-import { Suspense, cache } from "react";
+import { Suspense } from "react";
 import Link from "next/link";
-import { auth } from '@/lib/auth/server';
+import { getSession } from '@/lib/auth/session';
 import { NavigationMenu } from '@/ui/NavigationMenu';
 import { ThemeToggle } from '@/ui/ThemeToggle';
 
-// Deduped per request: HeaderGreeting and HeaderNav both need the session,
-// so without this each would trigger its own auth.getSession() call.
-const getSession = cache(() => auth.getSession());
-
+// getSession() is shared (via React's cache()) across every server component
+// rendered in this request — HeaderGreeting, HeaderNav, and whatever page
+// renders alongside them all get the same one `auth.getSession()` round trip
+// instead of each paying for it separately.
+//
 // auth.getSession() is a real network/DB round trip (this SDK validates
 // sessions server-side, it doesn't just decode a local cookie). Header
 // renders before `{children}` in the root layout, so without a Suspense

@@ -10,15 +10,18 @@ jest.mock("@vercel/blob", () => ({
 
 jest.mock("@/lib/posts/queries", () => ({
   getAllPostBodies: jest.fn(),
+  deleteExpiredTrash: jest.fn(),
 }));
 
 import { GET } from "@/app/api/cron/cleanup-blobs/route";
 import { list, del } from "@vercel/blob";
-import { getAllPostBodies } from "@/lib/posts/queries";
+import { deleteExpiredTrash, getAllPostBodies } from "@/lib/posts/queries";
+import { TRASH_RETENTION_DAYS } from "@/lib/constants";
 
 const mockList = list as jest.Mock;
 const mockDel = del as jest.Mock;
 const mockGetAllPostBodies = getAllPostBodies as jest.Mock;
+const mockDeleteExpiredTrash = deleteExpiredTrash as jest.Mock;
 
 function makeRequest(headers: Record<string, string> = {}) {
   return new Request("http://localhost/api/cron/cleanup-blobs", { headers });
@@ -37,6 +40,7 @@ const referencedDoc = {
 beforeEach(() => {
   jest.clearAllMocks();
   process.env.CRON_SECRET = "test-secret";
+  mockDeleteExpiredTrash.mockResolvedValue(0);
 });
 
 describe("GET /api/cron/cleanup-blobs", () => {
@@ -71,7 +75,7 @@ describe("GET /api/cron/cleanup-blobs", () => {
 
     expect(res.status).toBe(200);
     expect(mockDel).toHaveBeenCalledWith(["posts/user-1/orphaned-old.jpg"]);
-    expect(body).toEqual({ scanned: 3, referenced: 1, deleted: 1 });
+    expect(body).toEqual({ purgedFromTrash: 0, scanned: 3, referenced: 1, deleted: 1 });
   });
 
   it("paginates through list() until hasMore is false", async () => {
@@ -94,6 +98,34 @@ describe("GET /api/cron/cleanup-blobs", () => {
 
     expect(mockList).toHaveBeenCalledTimes(2);
     expect(mockList).toHaveBeenNthCalledWith(2, expect.objectContaining({ cursor: "cursor-1" }));
-    expect(body).toEqual({ scanned: 2, referenced: 0, deleted: 2 });
+    expect(body).toEqual({ purgedFromTrash: 0, scanned: 2, referenced: 0, deleted: 2 });
+  });
+
+  /** Order matters: the sweep only treats a purged post's images as orphans if
+      the purge has already removed the row by the time bodies are read. */
+  it("empties expired trash before reading post bodies for the sweep", async () => {
+    const order: string[] = [];
+    mockDeleteExpiredTrash.mockImplementationOnce(async () => {
+      order.push("purge");
+      return 2;
+    });
+    mockGetAllPostBodies.mockImplementationOnce(async () => {
+      order.push("bodies");
+      return [];
+    });
+    mockList.mockResolvedValueOnce({ blobs: [], hasMore: false });
+
+    const res = await GET(makeRequest({ authorization: "Bearer test-secret" }));
+    const body = await res.json();
+
+    expect(mockDeleteExpiredTrash).toHaveBeenCalledWith(TRASH_RETENTION_DAYS);
+    expect(order).toEqual(["purge", "bodies"]);
+    expect(body.purgedFromTrash).toBe(2);
+  });
+
+  it("does not purge the trash for an unauthorized caller", async () => {
+    await GET(makeRequest({ authorization: "Bearer wrong" }));
+    expect(mockDeleteExpiredTrash).not.toHaveBeenCalled();
   });
 });
+

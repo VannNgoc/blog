@@ -1,7 +1,22 @@
-@import '../styles/_variables.scss';
 @import '../styles/_keyframe-animations.scss';
 
 @import "tailwindcss";
+
+/*
+ * Kept here rather than pulled in from styles/_variables.scss: that file is
+ * ~350 lines of Tiptap design tokens (--tt-*) used only by the post body and
+ * the editor, so it's now imported directly by post-content.tsx and
+ * simple-editor.tsx instead of globally — every other route was shipping and
+ * parsing all of it for nothing. These few rules are genuinely site-wide
+ * (rendering quality, not editor styling), so they stay put.
+ */
+:root {
+  overflow-wrap: break-word;
+  text-size-adjust: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
 /*
  * Dark mode is class-based: the `dark:` Tailwind variant and the CSS variables

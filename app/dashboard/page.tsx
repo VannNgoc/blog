@@ -5,14 +5,16 @@ import {
   getUserPostArchive,
   getUserPostCadence,
   getUserPostCounts,
+  getUserOnThisDay,
   type ArchiveFilters,
 } from "@/lib/posts/queries";
+import { todayInSiteTimeZone } from "@/lib/dates";
 import { PostArchiveList } from "@/ui/posts/PostArchiveList";
 import { PostCadence } from "@/ui/posts/PostCadence";
 import { PostArchiveSkeleton } from "@/ui/posts/PostArchiveSkeleton";
 import { CreatePostButton } from "@/ui/posts/createPostButton";
 import { ACCESS_PRIVATE, ACCESS_PUBLIC } from "@/lib/constants";
-import { auth } from "@/lib/auth/server";
+import { getSession } from "@/lib/auth/session";
 import { Search } from "@/ui/posts/Search";
 
 export const dynamic = "force-dynamic";
@@ -149,6 +151,50 @@ function Stat({
   );
 }
 
+/** What you wrote on this calendar day in earlier years. The site is called
+    recollections; this is the part of the dashboard that actually recollects.
+    Renders nothing on days with no history, rather than an empty heading. */
+function OnThisDay({
+  posts,
+  today,
+}: {
+  posts: Awaited<ReturnType<typeof getUserOnThisDay>>;
+  today: string;
+}) {
+  if (posts.length === 0) return null;
+  const thisYear = Number(today.slice(0, 4));
+
+  return (
+    <section aria-labelledby="on-this-day" className="mt-6 sm:mt-8">
+      <h2
+        id="on-this-day"
+        className="text-xs font-semibold uppercase tracking-wide text-faint-foreground"
+      >
+        On this day
+      </h2>
+      <ul className="mt-2 flex flex-col gap-1">
+        {posts.map((post) => {
+          // UTC, like every other read of post_date: it's a zone-less DATE.
+          const yearsAgo = thisYear - new Date(post.post_date).getUTCFullYear();
+          return (
+            <li key={post.id} className="flex items-baseline gap-3">
+              <span className="w-20 shrink-0 text-xs tabular-nums text-faint-foreground">
+                {yearsAgo === 1 ? "1 year ago" : `${yearsAgo} years ago`}
+              </span>
+              <Link
+                href={`/posts/${post.id}`}
+                className="min-w-0 break-words text-foreground underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-muted-foreground"
+              >
+                {post.post_name.trim()}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 /** Exported so it can be rendered directly in tests: it's an async component
     inside a Suspense boundary, and jsdom won't resolve one through `render()`
     of the parent — the fallback is all that ever appears. */
@@ -187,15 +233,17 @@ export default async function Dashboard({
 }: {
   searchParams: Promise<DashboardParams>;
 }) {
-  const { data: session } = await auth.getSession();
+  const { data: session } = await getSession();
   if (!session?.user) redirect("/auth/sign-in");
 
   // None of these depend on each other, so they share one set of round trips
   // rather than three sequential awaits.
-  const [params, counts, cadence] = await Promise.all([
+  const today = todayInSiteTimeZone();
+  const [params, counts, cadence, onThisDay] = await Promise.all([
     searchParams,
     getUserPostCounts(session.user.id),
     getUserPostCadence(session.user.id),
+    getUserOnThisDay(session.user.id, today),
   ]);
 
   const months = monthList(params.month);
@@ -210,7 +258,17 @@ export default async function Dashboard({
     <main id="main-content" className="mx-auto w-full max-w-prose p-4 pb-24 md:pb-4">
       <div className="my-4 flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-foreground">Your Posts</h1>
-        <CreatePostButton />
+        <div className="flex items-center gap-4">
+          {/* Quiet on purpose: the trash is somewhere you go to undo a mistake,
+              not a place worth a card beside the counts. */}
+          <Link
+            href="/trash"
+            className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-muted-foreground"
+          >
+            Trash
+          </Link>
+          <CreatePostButton />
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-2">
@@ -231,6 +289,8 @@ export default async function Dashboard({
             toggling — hence the arrow. */}
         <Stat label="Drafts" value={counts.drafts} href="/drafts" navigates />
       </div>
+
+      <OnThisDay posts={onThisDay} today={today} />
 
       <div className="mt-6 sm:mt-8">
         <PostCadence

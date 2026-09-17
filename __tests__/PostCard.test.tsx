@@ -60,10 +60,13 @@ describe("PostCard", () => {
     expect(screen.getByText("This is the body of the post.")).toBeInTheDocument();
   });
 
-  it("renders a formatted post date", () => {
+  /** post_date is a DATE with no zone, arriving as UTC midnight. Formatting it
+      in the viewer's zone showed the previous day anywhere west of UTC. */
+  it("renders the post's own calendar day, whatever the local time zone", () => {
     render(<PostCard post={mockPost} isAuthor={false} />);
-    const date = new Date("2024-03-15").toLocaleDateString();
+    const date = new Date("2024-03-15").toLocaleDateString(undefined, { timeZone: "UTC" });
     expect(screen.getByText(date)).toBeInTheDocument();
+    expect(date).toMatch(/15/);
   });
 
   it("links to the correct post page", () => {

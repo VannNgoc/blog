@@ -1,5 +1,4 @@
 'use client';
-import { authClient } from '@/lib/auth/client';
 import { guardedExit } from '@/lib/unsaved-changes';
 
 const defaultClassName =
@@ -10,8 +9,16 @@ const defaultClassName =
 export default function SignOutButton({ className }: { className?: string }) {
     // Routed through guardedExit so signing out mid-edit prompts first: the
     // session has to survive long enough for the user to save that work.
+    //
+    // The auth client is imported on click rather than at the top of the file.
+    // This button lives in the header, so a static import put better-auth and
+    // all of zod (~100KB gzipped) into the shared bundle of every route —
+    // including the landing page, where most visitors are signed out and never
+    // see this button at all. Loading it on demand costs one small request at
+    // the moment someone actually signs out.
     const signOut = () => guardedExit(() => {
-        authClient.signOut()
+        import('@/lib/auth/client')
+            .then(({ authClient }) => authClient.signOut())
             .then(() => {
                 window.location.href = '/';
             })

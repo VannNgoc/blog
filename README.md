@@ -2,7 +2,7 @@
 
 A personal blog and reflection journal. Posts are **public**, **private**, or **drafts**, so the same app is both a public blog and a private journal — which is what makes the access model the interesting part rather than an afterthought.
 
-**Live:** [vann-recollections.vercel.app](https://vann-recollections.vercel.app/) · Next.js 16 · React 19 · Neon Postgres · ~5,100 lines of application code · 293 tests
+**Live:** [vann-recollections.vercel.app](https://vann-recollections.vercel.app/) · Next.js 16 · React 19 · Neon Postgres · ~5,100 lines of application code · 350 tests
 
 ![Posts feed](docs/screenshots/posts-list.png)
 
@@ -73,7 +73,7 @@ Search, pagination, and the dashboard's access/month filters are all query param
 |---|---|
 | Lighthouse accessibility | **100** on `/`, `/posts`, `/posts/[id]`, `/archive` |
 | Lighthouse SEO | **100** on the same routes |
-| Tests | **293** across 30 suites |
+| Tests | **350** across 35 suites |
 | API route coverage | **100%** statements (`/api/file`, `/api/upload`) |
 | Text contrast | 14.2:1 primary, 7.8:1 secondary — both AAA |
 | Reading measure | 60 characters at desktop width |
@@ -84,11 +84,11 @@ Contrast is deliberately *below* maximum. Near-black on white sits around 18:1, 
 
 ## Features
 
-**Writing** — Tiptap rich text with inline image uploads; drafts; public/private/draft access levels; unsaved-changes guard covering three exit paths, including Sign Out (which destroys the session before navigating, so `beforeunload` is too late to save anything).
+**Writing** — Tiptap rich text with inline image uploads; drafts; public/private/draft access levels; Ctrl/Cmd+S saves in place without leaving the editor; save failures (a missing title, an expired session) are shown rather than logged; a recovery copy in the browser offers back unsaved work after a crash or reload, without ever autosaving half-finished edits to a public post; unsaved-changes guard covering three exit paths, including Sign Out (which destroys the session before navigating, so `beforeunload` is too late to save anything).
 
 **Reading** — paginated feed, full-text search, chronological archive grouped by month, prev/next navigation with keyboard shortcuts, view transitions between posts.
 
-**Managing** — a dashboard with published/private/draft counts, a twelve-month writing-cadence chart, and filtering by access level or any combination of months.
+**Managing** — a dashboard with published/private/draft counts, an "On this day" list of what you wrote on today's date in earlier years, a twelve-month writing-cadence chart, and filtering by access level or any combination of months. Deleting moves a post to a trash it can be restored from for 30 days, and every post can be downloaded as one JSON file from the account page.
 
 **Platform** — email/password auth, per-request CSP nonce, security headers, upload rate limiting, and a nightly cron that deletes blob images no longer referenced by any post.
 
@@ -129,7 +129,7 @@ BLOB_READ_WRITE_TOKEN=...
 CRON_SECRET=...            # any random string; authorizes /api/cron/cleanup-blobs
 ```
 
-Run the migrations in `sql/` against your database, in order — `add_search_vector.sql` first (search returns nothing without it), then `add_not_null_constraints.sql`.
+Run the migrations in `sql/` against your database, in order — `add_search_vector.sql` first (search returns nothing without it), then `add_not_null_constraints.sql`, then `add_soft_delete.sql` (every post query reads its `deleted_at` column).
 
 ```bash
 npm run dev
@@ -142,7 +142,7 @@ npm test
 
 Things I'd fix next, listed because a project with no known problems usually means nobody looked.
 
-- **Images ship at capture resolution.** 3252 × 4336 originals — file sizes are fine (129–192 KB), the *dimensions* are not: a phone allocates a ~56 MB bitmap to decode one. Resizing at upload is the largest remaining performance win, deferred because it needs a backfill decision on existing posts.
+- **Older images ship at capture resolution.** New uploads are resized in the browser to at most 1600px (`compressImageForUpload`), but images uploaded before that are 3252 × 4336 originals — a phone allocates a ~56 MB bitmap to decode one. Fixing those needs a backfill decision on existing posts.
 - **No index on the columns actually filtered.** `POSTS` has a primary key and the search GIN index; the dashboard filters on `post_author` and the feed on `access`, both sequential scans. Irrelevant at 60 rows, wrong before it's 6,000.
 - **Rate limiting is per-instance.** An in-memory `Map`, so it resets on cold start and isn't shared between serverless instances. Real protection needs Vercel's Firewall rules.
 - **`hooks/` is 20% covered.** The two that guard unsaved work are tested; `useMenuNavigation` isn't, because it's coupled to a live editor instance and needs scaffolding the others didn't.

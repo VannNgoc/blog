@@ -2,12 +2,32 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { deletePostAction } from "@/lib/posts/actions";
+import { deletePostAction, deletePostForeverAction } from "@/lib/posts/actions";
+import { TRASH_RETENTION_DAYS } from "@/lib/constants";
+
+/** The same dialog serves both steps of deleting, so only its words change:
+    a first delete is recoverable and should say so, while the second, from
+    the trash, is the one that genuinely can't be undone. */
+const COPY = {
+  trash: {
+    title: "Move to trash?",
+    body: `You can restore it from Trash for ${TRASH_RETENTION_DAYS} days.`,
+    confirm: "Move to trash",
+    pending: "Moving...",
+  },
+  forever: {
+    title: "Delete forever?",
+    body: "This post and its images will be removed permanently. This can’t be undone.",
+    confirm: "Delete forever",
+    pending: "Deleting...",
+  },
+};
 
 export function DeletePostConfirmButton({
   id,
   redirectTo,
   label,
+  permanent = false,
 }: {
   id: number;
   /** Where to land afterwards. Omit when deleting from a list — you stay on it.
@@ -24,14 +44,17 @@ export function DeletePostConfirmButton({
       and reserving the colour for hover and focus puts the warning exactly
       where the decision happens. */
   label?: string;
+  /** Delete a post that's already in the trash, for good. */
+  permanent?: boolean;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const copy = permanent ? COPY.forever : COPY.trash;
 
   function confirmDelete() {
     startTransition(() => {
-      // submit the form that has action={deletePostAction}
+      // submit the hidden form below, which carries the server action
       formRef.current?.requestSubmit();
     });
   }
@@ -39,7 +62,7 @@ export function DeletePostConfirmButton({
   return (
     <div className="flex items-center">
       {/* The actual server-action form */}
-      <form ref={formRef} action={deletePostAction}>
+      <form ref={formRef} action={permanent ? deletePostForeverAction : deletePostAction}>
         <input type="hidden" name="id" value={id} />
         {redirectTo && <input type="hidden" name="redirectTo" value={redirectTo} />}
       </form>
@@ -77,9 +100,9 @@ export function DeletePostConfirmButton({
           aria-modal="true"
         >
           <div className="w-full max-w-sm rounded-xl bg-white p-4 text-zinc-900 shadow dark:bg-zinc-900 dark:text-zinc-50">
-            <h3 className="text-base font-semibold text-foreground">Delete post?</h3>
+            <h3 className="text-base font-semibold text-foreground">{copy.title}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              This action can’t be undone.
+              {copy.body}
             </p>
 
             <div className="mt-4 flex justify-end gap-2">
@@ -98,7 +121,7 @@ export function DeletePostConfirmButton({
                 className="rounded-md bg-red-600 px-3 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-60 dark:bg-red-500 dark:hover:bg-red-600"
                 disabled={isPending}
               >
-                {isPending ? "Deleting..." : "Yes, delete"}
+                {isPending ? copy.pending : copy.confirm}
               </button>
             </div>
           </div>
