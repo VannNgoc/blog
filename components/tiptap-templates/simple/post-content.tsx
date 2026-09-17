@@ -8,6 +8,10 @@ import { StaticImageNode } from "@/components/tiptap-node/image-node/image-node-
 import { PostImageLoader } from "@/components/tiptap-node/image-node/post-image-loader"
 
 // --- Styles ---
+// The --tt-* design tokens every rule below (and simple-editor.scss) resolves
+// against. Loaded here rather than globally (see app/globals.css) since only
+// the post body and the editor ever reference them.
+import "@/styles/_variables.scss"
 // Same stylesheet SimpleEditor uses: it already carries the
 // `.simple-editor-wrapper--readonly` rules this component renders with.
 import "@/components/tiptap-node/blockquote-node/blockquote-node.scss"

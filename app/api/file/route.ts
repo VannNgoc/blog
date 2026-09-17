@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { get } from "@vercel/blob"
 import { auth } from "@/lib/auth/server"
-import { getPostById } from "@/lib/posts/queries"
+import { getCachedPostById } from "@/lib/posts/cached"
 import { postReferencesPathname } from "@/lib/tiptap-utils"
 import { ACCESS_PUBLIC, ALLOWED_IMAGE_TYPES } from "@/lib/constants"
 
@@ -16,8 +16,12 @@ export async function GET(request: NextRequest) {
   // network round trip (this SDK validates server-side rather than decoding a
   // cookie) — so calling it up front charged that round trip to every image,
   // including the ones where the answer can't depend on who is asking.
+  //
+  // getCachedPostById (see lib/posts/cached.ts) shares this row across every
+  // reader of the same post — each image on a page is otherwise its own
+  // request here, so an uncached lookup meant one DB round trip per image.
   const postId = Number(request.nextUrl.searchParams.get("postId"))
-  const post = Number.isNaN(postId) ? undefined : await getPostById(postId)
+  const post = Number.isNaN(postId) ? undefined : await getCachedPostById(postId)
 
   // The post must actually embed this pathname — not just any postId the
   // caller pairs with it.

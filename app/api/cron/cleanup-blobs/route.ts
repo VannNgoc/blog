@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { list, del } from "@vercel/blob";
-import { getAllPostBodies } from "@/lib/posts/queries";
+import { deleteExpiredTrash, getAllPostBodies } from "@/lib/posts/queries";
 import { extractImagePathnames } from "@/lib/tiptap-utils";
+import { TRASH_RETENTION_DAYS } from "@/lib/constants";
 
 // Images get uploaded to blob storage the moment they're dropped into the
 // editor, before the post is ever saved (see /api/upload). A blob only
@@ -23,6 +24,11 @@ export async function GET(request: Request) {
   if (!isAuthorizedCronRequest(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  // Empty the trash first. getAllPostBodies deliberately still counts trashed
+  // posts, so purging here is what lets their images be swept in this same run
+  // instead of lingering until tomorrow's.
+  const purged = await deleteExpiredTrash(TRASH_RETENTION_DAYS);
 
   const posts = await getAllPostBodies();
   const referenced = new Set<string>();
@@ -58,6 +64,7 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({
+    purgedFromTrash: purged,
     scanned,
     referenced: referenced.size,
     deleted: toDelete.length,

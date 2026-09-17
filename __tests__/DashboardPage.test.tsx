@@ -12,6 +12,11 @@ jest.mock("@/lib/posts/queries", () => ({
   getUserPostArchive: jest.fn(),
   getUserPostCadence: jest.fn(),
   getUserPostCounts: jest.fn(),
+  getUserOnThisDay: jest.fn(),
+}));
+
+jest.mock("@/lib/dates", () => ({
+  todayInSiteTimeZone: () => "2026-09-16",
 }));
 
 jest.mock("@/ui/posts/DeletePostConfirmationButton", () => ({
@@ -52,6 +57,7 @@ import {
   getUserPostArchive,
   getUserPostCadence,
   getUserPostCounts,
+  getUserOnThisDay,
 } from "@/lib/posts/queries";
 import { ACCESS_PRIVATE, ACCESS_PUBLIC } from "@/lib/constants";
 
@@ -59,6 +65,7 @@ const mockGetSession = auth.getSession as jest.Mock;
 const mockArchive = getUserPostArchive as jest.Mock;
 const mockCadence = getUserPostCadence as jest.Mock;
 const mockCounts = getUserPostCounts as jest.Mock;
+const mockOnThisDay = getUserOnThisDay as jest.Mock;
 const mockRedirect = redirect as unknown as jest.Mock;
 
 const USER = "author-1";
@@ -73,6 +80,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockGetSession.mockResolvedValue({ data: { user: { id: USER } } });
   mockCounts.mockResolvedValue({ published: 42, private: 18, drafts: 1 });
+  mockOnThisDay.mockResolvedValue([]);
   mockCadence.mockResolvedValue([
     { month: "2026-06", count: 6 },
     { month: "2026-07", count: 10 },
@@ -83,6 +91,32 @@ beforeEach(() => {
     { id: 2, post_name: "A private one", post_date: "2026-08-02", access: 2 },
     { id: 1, post_name: "Older", post_date: "2026-07-04", access: 1 },
   ]);
+});
+
+describe("Dashboard — on this day", () => {
+  it("asks for today's anniversaries in the site's time zone", async () => {
+    render(await render_());
+    expect(mockOnThisDay).toHaveBeenCalledWith(USER, "2026-09-16");
+  });
+
+  it("stays out of the way on a day with no history", async () => {
+    render(await render_());
+    expect(screen.queryByRole("heading", { name: "On this day" })).not.toBeInTheDocument();
+  });
+
+  it("lists earlier years' posts with how long ago they were written", async () => {
+    mockOnThisDay.mockResolvedValueOnce([
+      { id: 9, post_name: "Last September", post_date: new Date("2025-09-16T00:00:00Z") },
+      { id: 4, post_name: "The first one", post_date: new Date("2023-09-16T00:00:00Z") },
+    ]);
+
+    render(await render_());
+
+    const section = screen.getByRole("heading", { name: "On this day" }).closest("section")!;
+    expect(within(section).getByText("1 year ago")).toBeInTheDocument();
+    expect(within(section).getByText("3 years ago")).toBeInTheDocument();
+    expect(within(section).getByRole("link", { name: "The first one" })).toHaveAttribute("href", "/posts/4");
+  });
 });
 
 describe("Dashboard — summary", () => {

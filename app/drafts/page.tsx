@@ -5,7 +5,7 @@ import { PostCard } from "@/ui/posts/PostCard";
 import { PostListSkeleton } from "@/ui/posts/PostListSkeleton";
 import { CreatePostButton } from "@/ui/posts/createPostButton";
 import { PostsNavBar } from "@/ui/posts/PostsNavBar";
-import { auth } from '@/lib/auth/server';
+import { getSession } from '@/lib/auth/session';
 export const dynamic = 'force-dynamic';
 
 async function DraftsList({ userId, page }: { userId: string; page: number }) {
@@ -29,7 +29,7 @@ async function DraftsList({ userId, page }: { userId: string; page: number }) {
 }
 
 export default async function Drafts({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
-  const { data: session } = await auth.getSession();
+  const { data: session } = await getSession();
   if (!session?.user) redirect("/auth/sign-in");
 
   const { page: pageParam } = await searchParams;

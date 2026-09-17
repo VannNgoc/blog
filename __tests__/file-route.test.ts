@@ -11,6 +11,14 @@ jest.mock("@/lib/posts/queries", () => ({
   getPostById: jest.fn(),
 }));
 
+// lib/posts/cached.ts wraps getPostById in next/cache's unstable_cache, which
+// relies on Next's request-scoped Data Cache — not present outside a real
+// Next.js request, so it throws in Jest. A passthrough keeps the route
+// exercising the same (mocked) getPostById above without any real caching.
+jest.mock("next/cache", () => ({
+  unstable_cache: (fn: (...args: unknown[]) => unknown) => fn,
+}));
+
 jest.mock("@/lib/auth/server", () => ({
   auth: { getSession: jest.fn() },
 }));

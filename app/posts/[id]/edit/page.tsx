@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
-import { getPostById } from "@/lib/posts/queries";
+import { getOwnPostForEditing } from "@/lib/posts/editing";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
-import { auth } from "@/lib/auth/server";
+import { getSession } from "@/lib/auth/session";
 
 export default async function Page({
   params,
@@ -9,14 +9,9 @@ export default async function Page({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const postId = Number(id);
-  if (Number.isNaN(postId)) notFound();
-  const post = await getPostById(postId);
+  const { data: session } = await getSession();
+  const post = await getOwnPostForEditing(Number(id), session?.user.id);
   if (!post) notFound();
-  const { data: session } = await auth.getSession();
-  if (session?.user.id !== post.post_author) {
-    notFound();
-  }
 
   return (
     <SimpleEditor

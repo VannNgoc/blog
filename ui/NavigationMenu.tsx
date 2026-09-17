@@ -36,6 +36,7 @@ export function NavigationMenu({ isSignedIn }: { isSignedIn: boolean }){
             <nav className="text-zinc-100 hidden md:flex md:items-center md:gap-4">
                 {isSignedIn ? <Link href="/dashboard" className="underline-offset-4 hover:underline hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300">Dashboard</Link> : null}
                 {isSignedIn ? <Link href="/drafts" className="underline-offset-4 hover:underline hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300">Drafts</Link> : null}
+                {isSignedIn ? <Link href="/account" className="underline-offset-4 hover:underline hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300">Account</Link> : null}
                 <Link href="/posts" className="underline-offset-4 hover:underline hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300">Shared Posts</Link>
                 <Link href="/archive" className="underline-offset-4 hover:underline hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300">Archive</Link>
                 {isSignedIn ? <SignOutButton /> : <Link href="/auth/sign-in" className="underline-offset-4 hover:underline hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300">Login</Link>}
@@ -83,6 +84,7 @@ export function NavigationMenu({ isSignedIn }: { isSignedIn: boolean }){
                 >
                     {isSignedIn ? <Link href="/dashboard" className={mobileItemClass}>Dashboard</Link> : null}
                     {isSignedIn ? <Link href="/drafts" className={mobileItemClass}>Drafts</Link> : null}
+                    {isSignedIn ? <Link href="/account" className={mobileItemClass}>Account</Link> : null}
                     <Link href="/posts" className={mobileItemClass}>Shared Posts</Link>
                     <Link href="/archive" className={mobileItemClass}>Archive</Link>
                     {isSignedIn ? <SignOutButton className={mobileItemClass} /> : <Link href="/auth/sign-in" className={mobileItemClass}>Login</Link>}

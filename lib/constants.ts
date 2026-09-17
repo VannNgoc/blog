@@ -1,10 +1,18 @@
 export const PAGINATION_LIMIT = 10;
 
+/** The zone "today" is judged in when dating a post. POSTS.post_date is a DATE
+    with no zone of its own, so this is the only place one gets decided. */
+export const SITE_TIME_ZONE = "America/New_York";
+
 /** POSTS.access values. These are foreign keys onto the ACCESS_TYPES table, so
     adding one here means adding the matching lookup row (see sql/). */
 export const ACCESS_PUBLIC = 1;
 export const ACCESS_PRIVATE = 2;
 export const ACCESS_DRAFT = 4;
+
+/** How long a deleted post waits in the trash before the nightly cron removes
+    it, and its images, for good. */
+export const TRASH_RETENTION_DAYS = 30;
 
 /** Vercel sets this to the production domain (no protocol) on every deploy. */
 export const BASE_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL

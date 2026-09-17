@@ -4,10 +4,17 @@ import type { PostRow, PostWithAuthorRow } from "@/type/post";
 
 import { ACCESS_DRAFT, ACCESS_PRIVATE, ACCESS_PUBLIC, PAGINATION_LIMIT } from '@/lib/constants'
 
+// Trash: a deleted post keeps its row, with `deleted_at` set, until the nightly
+// cron purges it. That makes every query below one more door a trashed post
+// could walk back out through, so each one filters on `deleted_at IS NULL`
+// explicitly. The only deliberate exceptions are the trash's own queries and
+// getAllPostBodies, whose blob sweep must keep a trashed post's images alive
+// for as long as the post can still be restored.
+
 export async function getPostsCount({ isPublic }: { isPublic: boolean }){
   const [{ count }] = isPublic
-  ? await sql`SELECT COUNT(*) FROM "POSTS" WHERE access = 1`
-  : await sql`SELECT COUNT(*) FROM "POSTS"`;
+  ? await sql`SELECT COUNT(*) FROM "POSTS" WHERE access = 1 AND deleted_at IS NULL`
+  : await sql`SELECT COUNT(*) FROM "POSTS" WHERE deleted_at IS NULL`;
   return count;
 }
 
@@ -25,7 +32,7 @@ export async function getPosts(userID: string | undefined, currentPage: number) 
       u.username
     FROM "POSTS" AS p
     INNER JOIN "USERS" AS u ON p.post_author = u.id
-    WHERE p.access = 1
+    WHERE p.access = 1 AND p.deleted_at IS NULL
     ORDER BY post_date DESC, id DESC
     LIMIT ${PAGINATION_LIMIT} OFFSET ${(currentPage - 1) * PAGINATION_LIMIT}
   `) as PostWithAuthorRow[];
@@ -46,7 +53,7 @@ export async function getPublicPostArchive() {
   const posts = (await sql`
     SELECT p.id, p.post_name, p.post_date
     FROM "POSTS" AS p
-    WHERE p.access = ${ACCESS_PUBLIC}
+    WHERE p.access = ${ACCESS_PUBLIC} AND p.deleted_at IS NULL
     ORDER BY post_date DESC, id DESC
   `) as Pick<PostRow, "id" | "post_name" | "post_date">[];
   return posts;
@@ -93,6 +100,7 @@ export async function getUserPostArchive(userID: string, filters: ArchiveFilters
     SELECT p.id, p.post_name, p.post_date, p.access
     FROM "POSTS" AS p
     WHERE p.post_author = ${userID}
+      AND p.deleted_at IS NULL
       AND ${accessFilter}
       AND ${monthFilter}
       AND ${searchFilter}
@@ -110,7 +118,7 @@ export async function getUserPostCounts(userID: string) {
       COUNT(*) FILTER (WHERE access = ${ACCESS_PRIVATE}) AS private,
       COUNT(*) FILTER (WHERE access = ${ACCESS_DRAFT})   AS drafts
     FROM "POSTS"
-    WHERE post_author = ${userID}
+    WHERE post_author = ${userID} AND deleted_at IS NULL
   `;
   return {
     published: Number(row.published),
@@ -137,6 +145,7 @@ export async function getUserPostCadence(userID: string, months = 12) {
       ON date_trunc('month', p.post_date) = m.month
      AND p.post_author = ${userID}
      AND p.access != ${ACCESS_DRAFT}
+     AND p.deleted_at IS NULL
     GROUP BY m.month
     ORDER BY m.month
   `) as { month: string; count: string }[];
@@ -146,7 +155,7 @@ export async function getUserPostCadence(userID: string, months = 12) {
 /** The dashboard is the author's own shelf: their published and private posts.
     Drafts are excluded here; they live on /drafts. */
 export async function getUserPostsCount(userID: string) {
-  const [{ count }] = await sql`SELECT COUNT(*) FROM "POSTS" WHERE post_author = ${userID} AND access != ${ACCESS_DRAFT}`;
+  const [{ count }] = await sql`SELECT COUNT(*) FROM "POSTS" WHERE post_author = ${userID} AND access != ${ACCESS_DRAFT} AND deleted_at IS NULL`;
   return count;
 }
 
@@ -164,7 +173,7 @@ export async function getUserPosts(userID: string, currentPage: number) {
       u.username
     FROM "POSTS" AS p
     INNER JOIN "USERS" AS u ON p.post_author = u.id
-    WHERE p.post_author = ${userID} AND p.access != ${ACCESS_DRAFT}
+    WHERE p.post_author = ${userID} AND p.access != ${ACCESS_DRAFT} AND p.deleted_at IS NULL
     ORDER BY post_date DESC, id DESC
     LIMIT ${PAGINATION_LIMIT} OFFSET ${(currentPage - 1) * PAGINATION_LIMIT}
   `) as PostWithAuthorRow[];
@@ -172,7 +181,7 @@ export async function getUserPosts(userID: string, currentPage: number) {
 }
 
 export async function getUserDraftsCount(userID: string) {
-  const [{ count }] = await sql`SELECT COUNT(*) FROM "POSTS" WHERE access = ${ACCESS_DRAFT} AND post_author = ${userID}`;
+  const [{ count }] = await sql`SELECT COUNT(*) FROM "POSTS" WHERE access = ${ACCESS_DRAFT} AND post_author = ${userID} AND deleted_at IS NULL`;
   return count;
 }
 
@@ -190,7 +199,7 @@ export async function getUserDrafts(userID: string, currentPage: number) {
       u.username
     FROM "POSTS" AS p
     INNER JOIN "USERS" AS u ON p.post_author = u.id
-    WHERE p.access = ${ACCESS_DRAFT} AND p.post_author = ${userID}
+    WHERE p.access = ${ACCESS_DRAFT} AND p.post_author = ${userID} AND p.deleted_at IS NULL
     ORDER BY post_date DESC, id DESC
     LIMIT ${PAGINATION_LIMIT} OFFSET ${(currentPage - 1) * PAGINATION_LIMIT}
   `) as PostWithAuthorRow[];
@@ -211,9 +220,89 @@ export async function getPostById(id: number) {
       u.username
     FROM "POSTS" AS p
     INNER JOIN "USERS" AS u ON p.post_author = u.id
-    WHERE p.id = ${id}
+    WHERE p.id = ${id} AND p.deleted_at IS NULL
   `) as PostWithAuthorRow[];
   return rows[0];
+}
+
+/** Like getPostById, but finds a post whether or not it's in the trash, and
+    says which. Only for the trash's own actions (restore, delete forever);
+    everything a reader can reach goes through getPostById instead. */
+export async function getPostByIdIncludingTrashed(id: number) {
+  const rows = (await sql`
+    SELECT p.id, p.post_author, p.post_body_json, p.deleted_at
+    FROM "POSTS" AS p
+    WHERE p.id = ${id}
+  `) as (Pick<PostRow, "id" | "post_author" | "post_body_json"> & { deleted_at: Date | null })[];
+  return rows[0];
+}
+
+/** An author's trashed posts, most recently trashed first.
+
+    Unpaginated: the trash empties itself after TRASH_RETENTION_DAYS, so it
+    stays short. */
+export async function getUserTrashedPosts(userID: string) {
+  const rows = (await sql`
+    SELECT p.id, p.post_name, p.post_date, p.access, p.deleted_at
+    FROM "POSTS" AS p
+    WHERE p.post_author = ${userID} AND p.deleted_at IS NOT NULL
+    ORDER BY p.deleted_at DESC, p.id DESC
+  `) as (Pick<PostRow, "id" | "post_name" | "post_date" | "access"> & { deleted_at: Date })[];
+  return rows;
+}
+
+/** Permanently removes posts that have sat in the trash longer than `days`.
+
+    Run by the nightly cron *before* it sweeps storage, so the images of the
+    posts removed here are recognised as unreferenced in the same run. */
+export async function deleteExpiredTrash(days: number) {
+  const rows = (await sql`
+    DELETE FROM "POSTS"
+    WHERE deleted_at IS NOT NULL
+      AND deleted_at < now() - make_interval(days => ${days})
+    RETURNING id
+  `) as { id: number }[];
+  return rows.length;
+}
+
+/** Everything an author has written, for them to download: every access
+    level including drafts, and whole bodies, oldest first so the file reads in
+    the order it was written. Trashed posts are left out, since deleting one
+    means you didn't want to keep it. */
+export async function getUserPostsForExport(userID: string) {
+  const rows = (await sql`
+    SELECT p.id, p.post_name, p.post_description, p.post_date, p.post_edit_date, p.access, p.post_body_json
+    FROM "POSTS" AS p
+    WHERE p.post_author = ${userID} AND p.deleted_at IS NULL
+    ORDER BY p.post_date ASC, p.id ASC
+  `) as Pick<
+    PostRow,
+    "id" | "post_name" | "post_description" | "post_date" | "post_edit_date" | "access" | "post_body_json"
+  >[];
+  return rows;
+}
+
+/** An author's posts from this calendar day in earlier years, newest first.
+
+    `today` is YYYY-MM-DD in the site's time zone (see todayInSiteTimeZone),
+    passed in rather than read from the database clock, which runs in UTC and
+    would flip to tomorrow's anniversaries every evening. Matching on the
+    formatted month and day means a February 29 post only resurfaces in leap
+    years, which is the honest answer. Drafts are left out: they were never
+    finished, so there's no "you wrote this" to remember. */
+export async function getUserOnThisDay(userID: string, today: string) {
+  const [year, month, day] = today.split("-");
+  const rows = (await sql`
+    SELECT p.id, p.post_name, p.post_date
+    FROM "POSTS" AS p
+    WHERE p.post_author = ${userID}
+      AND p.access != ${ACCESS_DRAFT}
+      AND p.deleted_at IS NULL
+      AND to_char(p.post_date, 'MM-DD') = ${`${month}-${day}`}
+      AND p.post_date < ${`${year}-01-01`}
+    ORDER BY p.post_date DESC, p.id DESC
+  `) as Pick<PostRow, "id" | "post_name" | "post_date">[];
+  return rows;
 }
 
 /** Every post's body, for sweeping storage that's no longer referenced by any post. */
@@ -236,6 +325,7 @@ export async function getAdjacentPosts(input: { id: number; post_date: Date; use
         OR (post_date = ${input.post_date} AND id > ${input.id})
       )
       AND ${accessFilter}
+      AND deleted_at IS NULL
       ORDER BY post_date ASC, id ASC
       LIMIT 1
     `,
@@ -247,6 +337,7 @@ export async function getAdjacentPosts(input: { id: number; post_date: Date; use
         OR (post_date = ${input.post_date} AND id < ${input.id})
       )
       AND ${accessFilter}
+      AND deleted_at IS NULL
       ORDER BY post_date DESC, id DESC
       LIMIT 1
     `,
@@ -303,6 +394,7 @@ export async function getSearchedPosts(searchString: string, authorID: string | 
     FROM "POSTS" AS p
     INNER JOIN "USERS" AS u ON p.post_author = u.id
     WHERE ${accessFilter}
+      AND p.deleted_at IS NULL
       AND ${searchMatchFilter(searchString, authorID)}
     ORDER BY ts_rank(p.search_vector, plainto_tsquery('english', ${searchString})) DESC, post_date DESC, id DESC
     LIMIT ${PAGINATION_LIMIT} OFFSET ${(currentPage - 1) * PAGINATION_LIMIT}
@@ -322,6 +414,7 @@ export async function getSearchedPostsCount(searchString: string, authorID?: str
     SELECT COUNT(*) FROM "POSTS" AS p
     INNER JOIN "USERS" AS u ON p.post_author = u.id
     WHERE ${accessFilter}
+      AND p.deleted_at IS NULL
       AND ${searchMatchFilter(searchString, authorID)}
   `;
   return count;

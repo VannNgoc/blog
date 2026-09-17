@@ -1,28 +1,33 @@
 // app/posts/page.tsx
-import {getPosts, getPostsCount, getSearchedPosts, getSearchedPostsCount} from "@/lib/posts/queries";
+import {getSearchedPosts, getSearchedPostsCount} from "@/lib/posts/queries";
+import { getCachedPublicPosts, getCachedPublicPostsCount } from "@/lib/posts/cached";
 import { PostCard } from "@/ui/posts/PostCard";
 import { CreatePostButton } from "@/ui/posts/createPostButton";
 import {PostsNavBar} from "@/ui/posts/PostsNavBar";
 import { Search } from "@/ui/posts/Search";
-import { auth } from '@/lib/auth/server';
+import { getSession } from '@/lib/auth/session';
 import { NavTransition } from "@/ui/NavTransition";
 
 export const dynamic = 'force-dynamic';
 
 export default async function PostsPage({ searchParams }: { searchParams: Promise<{ page?: string; q?: string }> }) {
-  // auth.getSession() and searchParams don't depend on each other, and
+  // getSession() and searchParams don't depend on each other, and
   // neither does the posts/count query pair below — running each pair in
   // parallel instead of four sequential awaits cuts the round trips this
   // force-dynamic page pays on every request roughly in half.
   const [{ data: session }, { page: pageParam, q }] = await Promise.all([
-    auth.getSession(),
+    getSession(),
     searchParams,
   ]);
   const page = Number(pageParam) || 1;
 
+  // The unsearched feed is the same page for every visitor, so it's served
+  // from the cache in lib/posts/cached.ts instead of re-querying Neon on
+  // every request. Search stays live: it's per-query traffic, not a shared
+  // read worth caching.
   const [posts, postCount] = await Promise.all([
-    q ? getSearchedPosts(q, undefined, page) : getPosts(session?.user.id, page),
-    q ? getSearchedPostsCount(q) : getPostsCount({ isPublic: true }),
+    q ? getSearchedPosts(q, undefined, page) : getCachedPublicPosts(page),
+    q ? getSearchedPostsCount(q) : getCachedPublicPostsCount(),
   ]);
 
   return (

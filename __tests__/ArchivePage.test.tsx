@@ -2,6 +2,15 @@ jest.mock("@/lib/posts/queries", () => ({
   getPublicPostArchive: jest.fn(),
 }));
 
+// lib/posts/cached.ts wraps getPublicPostArchive in next/cache's
+// unstable_cache, which relies on Next's request-scoped Data Cache — not
+// present outside a real Next.js request, so it throws in Jest. A passthrough
+// keeps the page exercising the same (mocked) getPublicPostArchive above
+// without any real caching.
+jest.mock("next/cache", () => ({
+  unstable_cache: (fn: (...args: unknown[]) => unknown) => fn,
+}));
+
 // PostArchiveList pulls in the row actions, which reach @vercel/blob through
 // the server actions — ESM that jest can't parse. The public archive renders
 // neither, so stubbing them keeps this test on the markup it actually cares
