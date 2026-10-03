@@ -73,7 +73,7 @@ import { ThemeToggle } from "@/components/tiptap-templates/simple/theme-toggle"
 import { UnsavedChangesDialog } from "@/ui/posts/UnsavedChangesDialog"
 
 // --- Lib ---
-import { getImageDimensions, handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
+import { getImageDimensions, handleImageUpload, isMac, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
 import { ACCESS_DRAFT } from "@/lib/constants"
 import { postMetaSchema } from "@/schemas/post-form"
 import {
@@ -92,6 +92,12 @@ import {
   editPostHandler,
   type SaveResult,
 } from "@/lib/posts/actions"
+
+/** True only for Cmd+S on macOS / Ctrl+S elsewhere, with no Shift or Alt. */
+function isSaveShortcut(event: KeyboardEvent): boolean {
+  const mod = isMac() ? event.metaKey : event.ctrlKey
+  return mod && !event.shiftKey && !event.altKey && event.key.toLowerCase() === "s"
+}
 
 /** Default empty document so a fresh "create" editor starts blank. */
 const EMPTY_DOC: JSONContent = {
@@ -589,10 +595,14 @@ export function SimpleEditor({
   }
 
   useHotkeys("mod+s", () => savePost(access, { stay: true }), {
-    enabled: editable,
+    // react-hotkeys-hook's `useKey` matching returns early on the letter alone
+    // and never checks modifiers, so without this guard a plain "s" saved the
+    // post and was swallowed instead of typed. Shift is excluded too, since
+    // mod+shift+s is the strikethrough shortcut.
+    enabled: (event) => editable && isSaveShortcut(event),
     enableOnFormTags: true,
     enableOnContentEditable: true,
-    preventDefault: true,
+    preventDefault: isSaveShortcut,
     // Match the letter typed, not the physical key: on a Dvorak or AZERTY
     // layout "S" is elsewhere, and Save should follow the letter, as it does
     // in the browser and every other editor.
